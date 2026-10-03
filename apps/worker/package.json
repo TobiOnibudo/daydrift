@@ -1,0 +1,29 @@
+{
+  "name": "@daydrift/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist",
+    "lint": "eslint src",
+    "test": "echo \"no tests yet\""
+  },
+  "dependencies": {
+    "@daydrift/ai": "workspace:*",
+    "@daydrift/config": "workspace:*",
+    "@daydrift/core": "workspace:*",
+    "@daydrift/db": "workspace:*",
+    "@daydrift/queue": "workspace:*",
+    "@daydrift/types": "workspace:*",
+    "ioredis": "^5.4.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.7.0"
+  }
+}
