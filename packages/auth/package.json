@@ -1,0 +1,26 @@
+{
+  "name": "@daydrift/auth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist",
+    "lint": "eslint src",
+    "test": "echo \"no tests yet\""
+  },
+  "dependencies": {
+    "better-auth": "^1.0.0",
+    "@daydrift/db": "workspace:*",
+    "@daydrift/config": "workspace:*"
+  }
+}
