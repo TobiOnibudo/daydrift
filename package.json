@@ -1,0 +1,41 @@
+{
+  "name": "daydrift",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Daydrift — AI city-guide / trip-planning app (RAG over geospatial place data)",
+  "type": "module",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "format": "prettier --write .",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "setup": "node scripts/setup.mjs",
+    "db:migrate": "pnpm --filter @daydrift/db migrate",
+    "db:generate": "pnpm --filter @daydrift/db generate",
+    "db:studio": "pnpm --filter @daydrift/db studio",
+    "seed": "pnpm --filter @daydrift/db seed",
+    "clean": "turbo run clean && rimraf node_modules",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0",
+    "eslint": "^9.0.0",
+    "eslint-plugin-import": "^2.29.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0",
+    "prettier": "^3.3.0",
+    "prettier-plugin-tailwindcss": "^0.6.0",
+    "rimraf": "^6.0.0",
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0",
+    "typescript-eslint": "^8.0.0"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  }
+}
