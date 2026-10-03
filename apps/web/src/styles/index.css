@@ -1,0 +1,5 @@
+/* Tailwind entry + design-system theme layer (see docs/05-frontend.md §6).
+   Token/theme CSS variables belong here; Tailwind config maps them to utilities. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
