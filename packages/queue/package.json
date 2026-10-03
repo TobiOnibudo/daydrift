@@ -1,0 +1,27 @@
+{
+  "name": "@daydrift/queue",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist",
+    "lint": "eslint src",
+    "test": "echo \"no tests yet\""
+  },
+  "dependencies": {
+    "bullmq": "^5.0.0",
+    "ioredis": "^5.4.0",
+    "@daydrift/config": "workspace:*",
+    "@daydrift/types": "workspace:*"
+  }
+}
