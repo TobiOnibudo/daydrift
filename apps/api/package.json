@@ -1,0 +1,32 @@
+{
+  "name": "@daydrift/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist",
+    "lint": "eslint src",
+    "test": "echo \"no tests yet\""
+  },
+  "dependencies": {
+    "@daydrift/auth": "workspace:*",
+    "@daydrift/config": "workspace:*",
+    "@daydrift/core": "workspace:*",
+    "@daydrift/db": "workspace:*",
+    "@daydrift/queue": "workspace:*",
+    "@daydrift/types": "workspace:*",
+    "@fastify/cors": "^9.0.0",
+    "@fastify/rate-limit": "^9.0.0",
+    "@fastify/static": "^7.0.0",
+    "fastify": "^4.28.0",
+    "ioredis": "^5.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.7.0"
+  }
+}
