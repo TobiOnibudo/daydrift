@@ -52,3 +52,5 @@ export function createAiPlanWorker(
 }
 
 export { createRedisConnection } from './connection.js';
+export * from './queues/embed-place.js';
+export type { EmbedPlaceJobData } from './queues/embed-place.js';
