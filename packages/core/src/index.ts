@@ -4,3 +4,5 @@
 export * from './retrieval/index.js';
 export * from './itinerary.js';
 export * from './osrm.js';
+export * from './prompt.js';
+export * from './schemas.js';
