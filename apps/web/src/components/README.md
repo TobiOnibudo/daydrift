@@ -1,8 +1,16 @@
-# components/
+# components
 
-Presentational product components (see [docs/05-frontend.md](../../../../docs/05-frontend.md) §3 & §6). They receive plain props and render — **no data fetching inside them**; data flows in from `hooks/`.
+Presentational product components: they receive props and render, never fetch.
 
-- `ui/` — shadcn/ui source (owned, customized in-repo).
-- `TripGenerationView.tsx` — maps the SSE stream to the progress stepper + streaming narrative + skeletons.
+| File                                         | Role                                                                   |
+| -------------------------------------------- | ---------------------------------------------------------------------- |
+| `AppShell`, `Logo`, `ProtectedRoute`         | Layout, skip link, nav; auth gate for signed-in routes.                |
+| `PlanForm`                                   | City, interest chips, length, travel mode.                             |
+| `TripGenerationView`                         | SSE-driven view: `ProgressStepper` + `StreamingNarrative` + skeletons. |
+| `TripResultView`, `ItineraryList`, `TripMap` | Finished trip: facts, timeline, Leaflet route map.                     |
+| `TripCard`                                   | A row in the trip history.                                             |
+| `states`, `ErrorBoundary`                    | `ErrorState` / `EmptyState`; last-resort render-error boundary.        |
+| `route/RouteTrace`                           | The animated signature route line (decorative, reduced-motion aware).  |
+| `ui/`                                        | Owned shadcn-style primitives.                                         |
 
-Build components the Daydrift way: shadcn/ui base, Tailwind design tokens (no raw hex/px), Framer Motion for animation, gated behind `prefers-reduced-motion`. Use the `daydrift-ui-component` skill (see docs/13).
+The streaming region is `aria-live="polite"`; errors use `role="alert"`.
