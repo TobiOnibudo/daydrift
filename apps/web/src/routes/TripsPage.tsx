@@ -7,6 +7,7 @@ import { EmptyState, ErrorState } from '../components/states';
 import { Button } from '../components/ui/button';
 import { Skeleton } from '../components/ui/skeleton';
 import { useDeleteTrip, useTrips } from '../hooks/useTrips';
+import { describeError } from '../lib/errors';
 import type { ApiTrip } from '../lib/types';
 
 export function TripsPage() {
@@ -18,7 +19,11 @@ export function TripsPage() {
     if (!window.confirm(`Delete “${name}”? This cannot be undone.`)) return;
     remove.mutate(trip.id, {
       onSuccess: () => toast.success('Trip deleted'),
-      onError: () => toast.error('Could not delete that trip. Please try again.'),
+      onError: (e) => {
+        const described = describeError(e);
+        if (described.kind !== 'session')
+          toast.error("We couldn't delete that trip. Please try again.");
+      },
     });
   };
 
@@ -42,6 +47,7 @@ export function TripsPage() {
       ) : trips.isError ? (
         <ErrorState
           title="We couldn't load your trips"
+          description={describeError(trips.error).message}
           action={<Button onClick={() => void trips.refetch()}>Retry</Button>}
         />
       ) : trips.data.length === 0 ? (

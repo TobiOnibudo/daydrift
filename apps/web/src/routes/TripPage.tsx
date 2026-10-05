@@ -10,7 +10,14 @@ import { Button } from '../components/ui/button';
 import { Skeleton } from '../components/ui/skeleton';
 import { useDeleteTrip, useRegenerateTrip, useShareTrip, useTrip } from '../hooks/useTrips';
 import { ApiError } from '../lib/api';
+import { describeError } from '../lib/errors';
 import type { ApiTrip } from '../lib/types';
+
+/** Show a failure as a toast, unless it is a dead session (handled globally with its own message). */
+const toastError = (error: unknown, fallback?: string) => {
+  const described = describeError(error);
+  if (described.kind !== 'session') toast.error(fallback ?? described.message);
+};
 
 function TripActions({ trip, onRegenerate }: { trip: ApiTrip; onRegenerate: () => void }) {
   const navigate = useNavigate();
@@ -23,7 +30,8 @@ function TripActions({ trip, onRegenerate }: { trip: ApiTrip; onRegenerate: () =
       await navigator.clipboard.writeText(shareUrl(token));
       toast.success('Link copied. Anyone with it can view this trip.');
     } catch {
-      toast.message('Copy this link to share', { description: shareUrl(token) });
+      // Clipboard access can be blocked (permissions, insecure context): show the link instead.
+      toast.message('Copy this link to share', { description: shareUrl(token), duration: 15_000 });
     }
   };
 
@@ -32,8 +40,14 @@ function TripActions({ trip, onRegenerate }: { trip: ApiTrip; onRegenerate: () =
       ? void copy(trip.shareToken)
       : enable.mutate(undefined, {
           onSuccess: (token) => void copy(token),
-          onError: () => toast.error('Could not create a share link.'),
+          onError: (e) => toastError(e, "We couldn't create a share link. Please try again."),
         });
+
+  const handleStopSharing = () =>
+    disable.mutate(undefined, {
+      onSuccess: () => toast.success('Sharing turned off'),
+      onError: (e) => toastError(e, "We couldn't turn sharing off. Please try again."),
+    });
 
   const handleDelete = () => {
     if (!window.confirm('Delete this trip? This cannot be undone.')) return;
@@ -42,7 +56,7 @@ function TripActions({ trip, onRegenerate }: { trip: ApiTrip; onRegenerate: () =
         toast.success('Trip deleted');
         navigate('/trips');
       },
-      onError: () => toast.error('Could not delete that trip.'),
+      onError: (e) => toastError(e, "We couldn't delete that trip. Please try again."),
     });
   };
 
@@ -52,13 +66,7 @@ function TripActions({ trip, onRegenerate }: { trip: ApiTrip; onRegenerate: () =
         <Link2 aria-hidden="true" /> {trip.shareToken ? 'Copy share link' : 'Share'}
       </Button>
       {trip.shareToken && (
-        <Button
-          variant="ghost"
-          onClick={() =>
-            disable.mutate(undefined, { onSuccess: () => toast.success('Sharing turned off') })
-          }
-          disabled={disable.isPending}
-        >
+        <Button variant="ghost" onClick={handleStopSharing} disabled={disable.isPending}>
           <Link2Off aria-hidden="true" /> Stop sharing
         </Button>
       )}
@@ -83,12 +91,16 @@ export function TripPage() {
     regenerate.mutate(tripId, {
       onSuccess: () => setAttempt((n) => n + 1),
       onError: (e) =>
-        toast.error(
+        toastError(
+          e,
           e instanceof ApiError && e.status === 409
             ? 'This trip is already being planned.'
-            : 'Could not restart planning. Please try again.',
+            : "We couldn't restart planning. Please try again.",
         ),
     });
+
+  // A malformed id is answered with 400 and an unknown or foreign one with 404: both mean "not yours".
+  const notFound = error instanceof ApiError && (error.status === 404 || error.status === 400);
 
   return (
     <div className="container py-10">
@@ -105,7 +117,7 @@ export function TripPage() {
           <Skeleton className="h-96 w-full" />
         </div>
       ) : error ? (
-        error instanceof ApiError && error.status === 404 ? (
+        notFound ? (
           <ErrorState
             title="We can't find that trip"
             description="It may have been deleted, or it belongs to another account."
@@ -118,6 +130,7 @@ export function TripPage() {
         ) : (
           <ErrorState
             title="We couldn't load this trip"
+            description={describeError(error).message}
             action={<Button onClick={() => void refetch()}>Retry</Button>}
           />
         )

@@ -4,6 +4,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 import { toast } from 'sonner';
 
 import { useSession, useSignOut } from '../hooks/useAuth';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { cn } from '../lib/utils';
 
 import { Logo } from './Logo';
@@ -20,6 +21,7 @@ export function AppShell() {
   const signOut = useSignOut();
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const online = useOnlineStatus();
 
   const handleSignOut = () =>
     signOut.mutate(undefined, {
@@ -38,6 +40,15 @@ export function AppShell() {
       >
         Skip to content
       </a>
+
+      {!online && (
+        <div
+          role="status"
+          className="bg-secondary text-secondary-foreground px-4 py-2 text-center text-sm"
+        >
+          You're offline. Reconnect to keep planning; nothing you do now will be saved.
+        </div>
+      )}
 
       <header className="bg-background/80 border-b backdrop-blur">
         <div className="container flex h-16 items-center justify-between gap-4">

@@ -5,11 +5,14 @@ import { ErrorState } from '../components/states';
 import { Button } from '../components/ui/button';
 import { Skeleton } from '../components/ui/skeleton';
 import { useSharedTrip } from '../hooks/useTrips';
+import { ApiError } from '../lib/api';
+import { describeError } from '../lib/errors';
 
 /** Public, read-only view of a trip someone shared. No account needed. */
 export function SharedTripPage() {
   const { token = '' } = useParams();
-  const { data: trip, isPending, isError } = useSharedTrip(token);
+  const { data: trip, isPending, error, refetch } = useSharedTrip(token);
+  const gone = error instanceof ApiError && [400, 404].includes(error.status);
 
   return (
     <div className="container py-10">
@@ -18,16 +21,24 @@ export function SharedTripPage() {
           <Skeleton className="h-10 w-1/2" />
           <Skeleton className="h-96 w-full" />
         </div>
-      ) : isError ? (
-        <ErrorState
-          title="This link isn't available"
-          description="The trip may have been removed, or sharing was turned off."
-          action={
-            <Button asChild>
-              <Link to="/">Go to Daydrift</Link>
-            </Button>
-          }
-        />
+      ) : error ? (
+        gone ? (
+          <ErrorState
+            title="This link isn't available"
+            description="The trip may have been removed, or sharing was turned off."
+            action={
+              <Button asChild>
+                <Link to="/">Go to Daydrift</Link>
+              </Button>
+            }
+          />
+        ) : (
+          <ErrorState
+            title="We couldn't load this trip"
+            description={describeError(error).message}
+            action={<Button onClick={() => void refetch()}>Retry</Button>}
+          />
+        )
       ) : (
         <>
           <TripResultView trip={trip} />

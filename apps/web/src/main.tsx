@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { MotionConfig } from 'framer-motion';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -7,19 +7,10 @@ import { Toaster } from 'sonner';
 
 import { App } from './App';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { ApiError } from './lib/api';
+import { createQueryClient } from './lib/query-client';
 import './styles/index.css';
 
-// One app-wide Query client. Client errors (4xx) are final; only network/5xx failures retry.
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 30_000,
-      refetchOnWindowFocus: false,
-      retry: (count, error) => !(error instanceof ApiError && error.status < 500) && count < 2,
-    },
-  },
-});
+const queryClient = createQueryClient();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('Root element #root not found');
