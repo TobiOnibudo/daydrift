@@ -180,3 +180,21 @@ export async function getSharedTrip(token: string): Promise<SharedTrip | null> {
   const { userId: _userId, shareToken: _shareToken, ...shared } = tripFromRow(row);
   return shared;
 }
+
+/** Save an edited itinerary on a finished trip the caller owns. Null if not found or not finished. */
+export async function updateTripStops(
+  id: string,
+  userId: string,
+  result: TripResult,
+): Promise<Trip | null> {
+  const [row] = await db
+    .update(trips)
+    .set({
+      legs: result.legs,
+      routeGeojson: result.routeGeojson ?? null,
+      totalDistanceKm: result.totalDistanceKm,
+    })
+    .where(and(eq(trips.id, id), eq(trips.userId, userId), eq(trips.status, 'complete')))
+    .returning();
+  return row ? tripFromRow(row) : null;
+}

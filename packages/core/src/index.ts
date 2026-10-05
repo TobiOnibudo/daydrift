@@ -21,3 +21,5 @@ export * from './evals/metrics.js';
 export * from './evals/evaluate-retrieval.js';
 export * from './evals/ground-truth.js';
 export * from './blurb.js';
+export * from './trips/edit.js';
+export * from './trips/suggestions.js';

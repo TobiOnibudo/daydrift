@@ -1,6 +1,6 @@
 import { db, places } from '@daydrift/db';
 import type { Place, PlaceCategory } from '@daydrift/types';
-import { and, asc, count, eq, isNotNull } from 'drizzle-orm';
+import { and, asc, count, eq, ilike, inArray, isNotNull } from 'drizzle-orm';
 
 import { placeColumns } from '../retrieval/columns.js';
 import { findCity } from '../seeding/cities.js';
@@ -53,4 +53,25 @@ export async function listCities(): Promise<CitySummary[]> {
     name: findCity(r.city)?.name ?? titleCase(r.city),
     placeCount: r.placeCount,
   }));
+}
+
+/** Fetch specific places (no embeddings), in no particular order. */
+export async function getPlacesByIds(ids: string[]): Promise<Place[]> {
+  if (ids.length === 0) return [];
+  return db.select(placeColumns).from(places).where(inArray(places.id, ids));
+}
+
+/** Case-insensitive name search within a city. `%` and `_` in the query are matched literally. */
+export async function searchPlacesByName(
+  city: string,
+  query: string,
+  limit: number,
+): Promise<Place[]> {
+  const escaped = query.replace(/[\\%_]/g, (char) => '\\' + char);
+  return db
+    .select(placeColumns)
+    .from(places)
+    .where(and(eq(places.city, city.trim().toLowerCase()), ilike(places.name, `%${escaped}%`)))
+    .orderBy(asc(places.name))
+    .limit(limit);
 }
