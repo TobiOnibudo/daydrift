@@ -6,10 +6,11 @@ import { planTrip, signUp } from './helpers';
 // WCAG 2.1 A/AA automated checks (docs/05 §7). Automated checks catch roughly a third of issues,
 // so these complement, and do not replace, keyboard and screen-reader testing.
 // Entrance animations fade content in; axe would otherwise measure half-transparent text.
-const settle = (page: Page) => page.waitForTimeout(1200);
+const settle = (page: Page, ms: number) => page.waitForTimeout(ms);
 
-async function expectNoViolations(page: Page) {
-  await settle(page);
+// The landing hero drops its last pin in after about 2.5s, so it needs longer to settle.
+async function expectNoViolations(page: Page, settleMs = 1200) {
+  await settle(page, settleMs);
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     // Third-party map tiles and controls are outside our control.
@@ -25,7 +26,7 @@ async function expectNoViolations(page: Page) {
 test('public pages have no detectable accessibility violations', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  await expectNoViolations(page);
+  await expectNoViolations(page, 3500);
 
   await page.goto('/auth');
   await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
