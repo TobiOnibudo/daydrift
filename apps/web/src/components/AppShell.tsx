@@ -7,6 +7,7 @@ import { useSession, useSignOut } from '../hooks/useAuth';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { cn } from '../lib/utils';
 
+import { Atmosphere } from './Atmosphere';
 import { Logo } from './Logo';
 import { Button } from './ui/button';
 
@@ -33,7 +34,8 @@ export function AppShell() {
     });
 
   return (
-    <div className="min-h-app flex flex-col">
+    <div className="min-h-app relative flex flex-col">
+      {pathname !== '/' && <Atmosphere />}
       <a
         href="#main"
         className="bg-primary text-primary-foreground sr-only z-50 rounded-md px-4 py-2 focus:not-sr-only focus:fixed focus:left-4 focus:top-4"

@@ -1,7 +1,9 @@
+import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
+import { SectionTitle } from '../components/SectionTitle';
 import { TripCard } from '../components/TripCard';
 import { EmptyState, ErrorState } from '../components/states';
 import { Button } from '../components/ui/button';
@@ -30,7 +32,7 @@ export function TripsPage() {
   return (
     <div className="container max-w-3xl py-8">
       <header className="mb-8 flex items-end justify-between gap-4">
-        <h1 className="text-4xl font-semibold">My trips</h1>
+        <SectionTitle title="My trips" />
         <Button asChild>
           <Link to="/plan">
             <Plus aria-hidden="true" /> New trip
@@ -61,17 +63,25 @@ export function TripsPage() {
           }
         />
       ) : (
-        <ul className="space-y-3">
+        <motion.ul
+          className="space-y-3"
+          initial="hidden"
+          animate="show"
+          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
+        >
           {trips.data.map((trip) => (
-            <li key={trip.id}>
+            <motion.li
+              key={trip.id}
+              variants={{ hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } }}
+            >
               <TripCard
                 trip={trip}
                 onDelete={handleDelete}
                 deleting={remove.isPending && remove.variables === trip.id}
               />
-            </li>
+            </motion.li>
           ))}
-        </ul>
+        </motion.ul>
       )}
     </div>
   );

@@ -45,6 +45,19 @@ export default {
         soft: '0 1px 2px hsl(var(--foreground) / 0.06), 0 8px 24px -12px hsl(var(--foreground) / 0.18)',
       },
       keyframes: {
+        twinkle: {
+          '0%, 100%': { opacity: '0.25', transform: 'scale(0.8)' },
+          '50%': { opacity: '1', transform: 'scale(1.25)' },
+        },
+        shoot: {
+          '0%': { opacity: '0', transform: 'translate(0, 0) rotate(24deg)' },
+          '1.5%': { opacity: '1' },
+          '9%': { opacity: '0', transform: 'translate(120vw, 54vh) rotate(24deg)' },
+          '100%': { opacity: '0', transform: 'translate(120vw, 54vh) rotate(24deg)' },
+        },
+        march: { to: { strokeDashoffset: '-40' } },
+        orbit: { to: { transform: 'rotate(360deg)' } },
+        'orbit-reverse': { to: { transform: 'rotate(-360deg)' } },
         caret: { to: { visibility: 'hidden' } },
         topo: {
           from: { transform: 'rotate(0deg) scale(1.05)' },
@@ -58,6 +71,11 @@ export default {
       animation: {
         drift: 'drift 18s ease-in-out infinite',
         topo: 'topo 90s linear infinite',
+        twinkle: 'twinkle 4s ease-in-out infinite',
+        shoot: 'shoot 16s linear 5s infinite',
+        march: 'march 14s linear infinite',
+        orbit: 'orbit 26s linear infinite',
+        'orbit-reverse': 'orbit-reverse 40s linear infinite',
         caret: 'caret 1s steps(2, start) infinite',
       },
     },

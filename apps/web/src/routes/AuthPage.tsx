@@ -2,6 +2,7 @@ import { useRef, useState, type FocusEvent, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
+import { OrbitEmblem } from '../components/route/OrbitEmblem';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Field } from '../components/ui/field';
@@ -118,83 +119,86 @@ export function AuthPage() {
 
   return (
     <div className="min-h-fit-screen container flex items-center justify-center py-6">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-3xl">
-            {mode === 'signin' ? 'Welcome back' : 'Create your account'}
-          </CardTitle>
-          <CardDescription>
-            {mode === 'signin'
-              ? 'Sign in to pick up your trips.'
-              : 'Save your trips and share them with friends.'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-            {formError && (
-              <p
-                ref={formErrorRef}
-                tabIndex={-1}
-                role="alert"
-                className="bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm"
-              >
-                {formError}
-              </p>
-            )}
+      <div className="aurora-border shadow-soft w-full max-w-md rounded-lg">
+        <Card className="border-0 shadow-none">
+          <CardHeader className="items-center text-center">
+            <OrbitEmblem className="h-20 w-20" />
+            <CardTitle className="text-3xl">
+              {mode === 'signin' ? 'Welcome back' : 'Create your account'}
+            </CardTitle>
+            <CardDescription>
+              {mode === 'signin'
+                ? 'Sign in to pick up your trips.'
+                : 'Save your trips and share them with friends.'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+              {formError && (
+                <p
+                  ref={formErrorRef}
+                  tabIndex={-1}
+                  role="alert"
+                  className="bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm"
+                >
+                  {formError}
+                </p>
+              )}
 
-            {mode === 'signup' && (
-              <Field id="name" label="Name" error={errors.name}>
+              {mode === 'signup' && (
+                <Field id="name" label="Name" error={errors.name}>
+                  <Input
+                    autoComplete="name"
+                    maxLength={MAX_NAME + 20}
+                    value={values.name}
+                    onChange={(e) => update('name', e.target.value)}
+                    onBlur={(e) => validateOnBlur('name', e)}
+                  />
+                </Field>
+              )}
+              <Field id="email" label="Email" error={errors.email}>
                 <Input
-                  autoComplete="name"
-                  maxLength={MAX_NAME + 20}
-                  value={values.name}
-                  onChange={(e) => update('name', e.target.value)}
-                  onBlur={(e) => validateOnBlur('name', e)}
+                  type="email"
+                  autoComplete="email"
+                  maxLength={MAX_EMAIL + 20}
+                  value={values.email}
+                  onChange={(e) => update('email', e.target.value)}
+                  onBlur={(e) => validateOnBlur('email', e)}
                 />
               </Field>
-            )}
-            <Field id="email" label="Email" error={errors.email}>
-              <Input
-                type="email"
-                autoComplete="email"
-                maxLength={MAX_EMAIL + 20}
-                value={values.email}
-                onChange={(e) => update('email', e.target.value)}
-                onBlur={(e) => validateOnBlur('email', e)}
-              />
-            </Field>
-            <Field
-              id="password"
-              label="Password"
-              error={errors.password}
-              hint={mode === 'signup' ? 'At least 8 characters.' : undefined}
-            >
-              <Input
-                type="password"
-                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-                value={values.password}
-                onChange={(e) => update('password', e.target.value)}
-                onBlur={(e) => validateOnBlur('password', e)}
-              />
-            </Field>
+              <Field
+                id="password"
+                label="Password"
+                error={errors.password}
+                hint={mode === 'signup' ? 'At least 8 characters.' : undefined}
+              >
+                <Input
+                  type="password"
+                  autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+                  value={values.password}
+                  onChange={(e) => update('password', e.target.value)}
+                  onBlur={(e) => validateOnBlur('password', e)}
+                />
+              </Field>
 
-            <Button type="submit" className="w-full" disabled={pending}>
-              {pending ? 'One moment…' : mode === 'signin' ? 'Sign in' : 'Create account'}
-            </Button>
-          </form>
+              <Button type="submit" className="w-full" disabled={pending}>
+                {pending ? 'One moment…' : mode === 'signin' ? 'Sign in' : 'Create account'}
+              </Button>
+            </form>
 
-          <p className="text-muted-foreground mt-5 text-center text-sm">
-            {mode === 'signin' ? 'New to Daydrift?' : 'Already have an account?'}{' '}
-            <button
-              type="button"
-              className="text-primary font-medium underline-offset-4 hover:underline"
-              onClick={switchMode}
-            >
-              {mode === 'signin' ? 'Create an account' : 'Sign in'}
-            </button>
-          </p>
-        </CardContent>
-      </Card>
+            <p className="text-muted-foreground mt-5 text-center text-sm">
+              {mode === 'signin' ? 'New to Daydrift?' : 'Already have an account?'}{' '}
+              <button
+                type="button"
+                className="text-primary font-medium underline-offset-4 hover:underline"
+                onClick={switchMode}
+              >
+                {mode === 'signin' ? 'Create an account' : 'Sign in'}
+              </button>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

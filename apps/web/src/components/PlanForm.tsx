@@ -5,6 +5,7 @@ import type { CitySummary, CreateTripPayload, Duration, TravelMode } from '../li
 import { cn } from '../lib/utils';
 import { MAX_INTEREST_LENGTH, MAX_INTERESTS, validateInterest } from '../lib/validation';
 
+import { TripPreview } from './TripPreview';
 import { Button } from './ui/button';
 import { Field } from './ui/field';
 import { Input } from './ui/input';
@@ -199,6 +200,12 @@ export function PlanForm({ cities, submitting, error, fieldErrors = {}, onSubmit
       </div>
 
       <div className="space-y-6">
+        <TripPreview
+          cityName={cities.find((c) => c.key === city)?.name ?? ''}
+          duration={duration}
+          mode={mode}
+          interests={interests}
+        />
         <div className="space-y-2">
           <span className="text-sm font-medium">How long do you have?</span>
           <Segmented

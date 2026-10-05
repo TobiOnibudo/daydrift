@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import type { ApiTrip } from '../lib/types';
 
+import { RouteThumb } from './route/RouteThumb';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -32,17 +33,23 @@ export function TripCard({ trip, onDelete, deleting = false }: TripCardProps) {
   });
 
   return (
-    <Card className="flex items-center justify-between gap-4 p-5 transition-shadow hover:shadow-md">
-      <Link to={`/trips/${trip.id}`} className="min-w-0 flex-1 rounded-md">
-        <h3 className="font-display truncate text-lg font-semibold">{title}</h3>
-        <p className="text-muted-foreground mt-1 text-sm">
-          {titleCase(trip.city)} · {when} · {trip.legs.length} stops
-        </p>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          <Badge variant={status.variant}>{status.label}</Badge>
-          {trip.interests.slice(0, 3).map((i) => (
-            <Badge key={i}>{i}</Badge>
-          ))}
+    <Card className="hover:border-primary/40 group flex items-center justify-between gap-4 p-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-md">
+      <Link to={`/trips/${trip.id}`} className="flex min-w-0 flex-1 items-center gap-4 rounded-md">
+        <RouteThumb
+          legs={trip.legs}
+          className="h-16 w-24 shrink-0 transition-transform duration-300 group-hover:scale-105"
+        />
+        <div className="min-w-0 flex-1">
+          <h3 className="font-display truncate text-lg font-semibold">{title}</h3>
+          <p className="text-muted-foreground mt-1 text-sm">
+            {titleCase(trip.city)} · {when} · {trip.legs.length} stops
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <Badge variant={status.variant}>{status.label}</Badge>
+            {trip.interests.slice(0, 3).map((i) => (
+              <Badge key={i}>{i}</Badge>
+            ))}
+          </div>
         </div>
       </Link>
       <Button

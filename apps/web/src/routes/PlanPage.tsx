@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 
 import { PlanForm } from '../components/PlanForm';
+import { SectionTitle } from '../components/SectionTitle';
 import { EmptyState, ErrorState } from '../components/states';
 import { Button } from '../components/ui/button';
 import { Skeleton } from '../components/ui/skeleton';
@@ -18,10 +19,9 @@ export function PlanPage() {
 
   return (
     <div className="container max-w-5xl py-6 lg:py-5">
-      <header className="mb-5 space-y-1 lg:mb-4">
-        <h1 className="text-3xl font-semibold sm:text-4xl">Plan a trip</h1>
-        <p className="text-muted-foreground">Tell us the vibe and we will build the day.</p>
-      </header>
+      <div className="mb-5 lg:mb-4">
+        <SectionTitle title="Plan a trip">Tell us the vibe and we will build the day.</SectionTitle>
+      </div>
 
       {cities.isPending ? (
         <div className="space-y-4" role="status" aria-label="Loading cities">

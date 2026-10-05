@@ -205,3 +205,31 @@
 .chip-pop {
   animation: chip-pop 0.28s ease-out;
 }
+
+/* A card edge lit by a slowly rotating aurora. The card sits on top; only a 1.5px rim shows. */
+.aurora-border {
+  position: relative;
+  overflow: hidden;
+  padding: 1.5px;
+  isolation: isolate;
+}
+.aurora-border::before {
+  content: '';
+  position: absolute;
+  inset: -80%;
+  z-index: -1;
+  background: conic-gradient(
+    from 0deg,
+    hsl(var(--primary)),
+    hsl(var(--sand)),
+    hsl(var(--sea)),
+    hsl(var(--sand)),
+    hsl(var(--primary))
+  );
+  animation: aurora-spin 9s linear infinite;
+}
+@keyframes aurora-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

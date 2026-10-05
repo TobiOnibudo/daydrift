@@ -1,8 +1,9 @@
 import { Link2, Link2Off, RotateCcw, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
+import { Celebrate } from '../components/Celebrate';
 import { TripGenerationView } from '../components/TripGenerationView';
 import { TripResultView } from '../components/TripResultView';
 import { ErrorState } from '../components/states';
@@ -103,6 +104,20 @@ export function TripPage() {
   const notFound = error instanceof ApiError && (error.status === 404 || error.status === 400);
 
   const finished = !isPending && !error && trip.status === 'complete';
+
+  // Celebrate only when the person watched this trip get planned, not when they just reopen it.
+  const waited = useRef(false);
+  const [celebrate, setCelebrate] = useState(false);
+  const status = trip?.status;
+  useEffect(() => {
+    if (status === 'pending' || status === 'processing') waited.current = true;
+    if (status === 'complete' && waited.current) {
+      waited.current = false;
+      setCelebrate(true);
+      const timer = window.setTimeout(() => setCelebrate(false), 2600);
+      return () => window.clearTimeout(timer);
+    }
+  }, [status]);
   const back = (
     <Link
       to="/trips"
@@ -114,6 +129,7 @@ export function TripPage() {
 
   return (
     <div className={finished ? 'container max-w-[96rem] py-3' : 'container py-10'}>
+      {celebrate && <Celebrate />}
       {!finished && <div className="mb-6">{back}</div>}
 
       {isPending ? (

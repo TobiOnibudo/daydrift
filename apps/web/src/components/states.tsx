@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import { AlertTriangle, Compass } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -36,7 +37,13 @@ export function EmptyState({ title, description, action, className }: StateProps
         className,
       )}
     >
-      <Compass className="text-primary h-8 w-8" aria-hidden="true" />
+      <motion.span
+        aria-hidden="true"
+        animate={{ rotate: [0, 16, -12, 0], y: [0, -3, 0] }}
+        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+      >
+        <Compass className="text-primary h-8 w-8" />
+      </motion.span>
       <h2 className="text-xl font-semibold">{title}</h2>
       {description && <p className="text-muted-foreground max-w-md text-sm">{description}</p>}
       {action}
