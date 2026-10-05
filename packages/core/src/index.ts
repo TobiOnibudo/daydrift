@@ -17,3 +17,6 @@ export * from './seeding/cities.js';
 export * from './places/repository.js';
 export * from './retrieval/semantic.js';
 export * from './health.js';
+export * from './evals/metrics.js';
+export * from './evals/evaluate-retrieval.js';
+export * from './evals/ground-truth.js';

@@ -17,7 +17,8 @@
     "clean": "rimraf dist",
     "lint": "eslint src",
     "test": "vitest run",
-    "seed": "tsx src/seeding/cli.ts"
+    "seed": "tsx src/seeding/cli.ts",
+    "eval": "tsx src/evals/cli.ts"
   },
   "dependencies": {
     "@daydrift/db": "workspace:*",
