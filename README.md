@@ -26,7 +26,9 @@ pnpm install && pnpm setup && pnpm dev
 - `pnpm setup` — copy `.env`, start Postgres + Redis, migrate, seed a sample city (idempotent).
 - `pnpm dev` — run `api`, `worker`, and `web` together via Turbo.
 
-Requires Node 20, pnpm 9, Docker, and (for local AI) Ollama. See
+Requires Node 20, pnpm 9, Docker, and (for local AI) Ollama with `nomic-embed-text` and `llama3.2:3b` pulled.
+If ports 5432/6379 are taken, set `POSTGRES_PORT`/`REDIS_PORT` in `.env` and match them in `DATABASE_URL`/`REDIS_URL`.
+Local LLMs are slow on CPU; raise `LLM_TIMEOUT_MS` or use a hosted model. On timeout the worker falls back to a proximity itinerary. See
 [docs/07-local-dev.md](./docs/07-local-dev.md).
 
 ## Repo map

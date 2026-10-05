@@ -12,7 +12,7 @@
 - `seeding/` — Overpass ingestion and the embedding processor (`pnpm seed`).
 - `evals/` — retrieval quality metrics and runner (`pnpm eval`).
 
-**How to run:** Library. `pnpm --filter @daydrift/core test` (unit tests, no infra needed), `pnpm seed`, `pnpm eval`.
+**How to run:** Library. `pnpm test` (unit tests, no infra needed), `pnpm test:integration` (real Postgres + Redis from `docker compose up`, in an isolated `daydrift_test` database and Redis db 1), `pnpm seed`, `pnpm eval`.
 
 **Dependencies:** `@daydrift/db`, `@daydrift/ai`, `@daydrift/queue`, `@daydrift/types`, `@daydrift/config`.
 
