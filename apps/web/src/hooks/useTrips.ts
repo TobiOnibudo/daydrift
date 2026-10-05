@@ -1,88 +1,97 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { fetchJson } from '../lib/api';
+import type { ApiTrip, CitySummary, CreateTripPayload, SharedApiTrip } from '../lib/types';
 
-// Data hooks encapsulate all server state + caching (see docs/05-frontend.md §2).
-// Cache-key convention: ['trips'], ['trip', id], ['places', query].
-//
-// NOTE: shared domain types live in @daydrift/types once that package is
-// populated. Local placeholder shapes are used here to keep the stub compiling.
-export interface Place {
-  id: string;
-  name: string;
-}
+// All server state lives here (docs/05 §2). Cache keys: ['trips'], ['trip', id],
+// ['shared', token], ['cities'].
 
-export interface Trip {
-  id: string;
-  title: string;
-}
+export const tripKey = (id: string) => ['trip', id] as const;
 
-export interface CreateTripInput {
-  title: string;
-}
-
-// --- Queries -------------------------------------------------------------
-
-/** Place search / autocomplete. Keyed by the query string. */
-export function usePlaces(query: string) {
+export function useCities() {
   return useQuery({
-    queryKey: ['places', query],
-    queryFn: () => fetchJson<Place[]>(`/places?q=${encodeURIComponent(query)}`),
-    enabled: query.length > 0,
+    queryKey: ['cities'],
+    queryFn: async () => (await fetchJson<{ cities: CitySummary[] }>('/places/cities')).cities,
+    staleTime: 10 * 60_000,
   });
 }
 
-/** Single trip detail, keyed by trip id. */
+export function useTrips() {
+  return useQuery({
+    queryKey: ['trips'],
+    queryFn: async () => (await fetchJson<{ trips: ApiTrip[] }>('/trips')).trips,
+  });
+}
+
 export function useTrip(tripId: string) {
   return useQuery({
-    queryKey: ['trip', tripId],
-    queryFn: () => fetchJson<Trip>(`/trips/${tripId}`),
+    queryKey: tripKey(tripId),
+    queryFn: async () => (await fetchJson<{ trip: ApiTrip }>(`/trips/${tripId}`)).trip,
     enabled: Boolean(tripId),
   });
 }
 
-/** Current user's trip list. */
-export function useTrips() {
+/** A trip opened through a public share link (no session needed). */
+export function useSharedTrip(token: string) {
   return useQuery({
-    queryKey: ['trips'],
-    queryFn: () => fetchJson<Trip[]>('/trips'),
+    queryKey: ['shared', token],
+    queryFn: async () => (await fetchJson<{ trip: SharedApiTrip }>(`/shared/${token}`)).trip,
+    enabled: Boolean(token),
+    retry: false,
   });
 }
 
-// --- Mutations -----------------------------------------------------------
+interface CreatedTrip {
+  tripId: string;
+  status: ApiTrip['status'];
+}
 
-/** Create a trip; invalidates the ['trips'] list. */
 export function useCreateTrip() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: CreateTripInput) =>
-      fetchJson<Trip>('/trips', { method: 'POST', json: input }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['trips'] });
-    },
+    mutationFn: (input: CreateTripPayload) =>
+      fetchJson<CreatedTrip>('/trips', { method: 'POST', json: input }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['trips'] }),
   });
 }
 
-/** Delete a trip; invalidates the ['trips'] list and the affected ['trip', id]. */
 export function useDeleteTrip() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (tripId: string) => fetchJson<void>(`/trips/${tripId}`, { method: 'DELETE' }),
     onSuccess: (_data, tripId) => {
-      queryClient.invalidateQueries({ queryKey: ['trips'] });
-      queryClient.invalidateQueries({ queryKey: ['trip', tripId] });
+      queryClient.removeQueries({ queryKey: tripKey(tripId) });
+      return queryClient.invalidateQueries({ queryKey: ['trips'] });
     },
   });
 }
 
-/** Regenerate a trip's itinerary; invalidates the affected ['trip', id]. */
 export function useRegenerateTrip() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (tripId: string) =>
-      fetchJson<Trip>(`/trips/${tripId}/regenerate`, { method: 'POST' }),
-    onSuccess: (_data, tripId) => {
-      queryClient.invalidateQueries({ queryKey: ['trip', tripId] });
-    },
+      fetchJson<CreatedTrip>(`/trips/${tripId}/regenerate`, { method: 'POST' }),
+    onSuccess: (_data, tripId) =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: tripKey(tripId) }),
+        queryClient.invalidateQueries({ queryKey: ['trips'] }),
+      ]),
   });
+}
+
+/** Turn a public share link on (returns the token) or off. */
+export function useShareTrip(tripId: string) {
+  const queryClient = useQueryClient();
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: tripKey(tripId) });
+  const enable = useMutation({
+    mutationFn: async () =>
+      (await fetchJson<{ shareToken: string }>(`/trips/${tripId}/share`, { method: 'POST' }))
+        .shareToken,
+    onSuccess: invalidate,
+  });
+  const disable = useMutation({
+    mutationFn: () => fetchJson<void>(`/trips/${tripId}/share`, { method: 'DELETE' }),
+    onSuccess: invalidate,
+  });
+  return { enable, disable };
 }

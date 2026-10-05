@@ -1,92 +1,107 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useReducer } from 'react';
 
-import type { Trip } from './useTrips';
+import { API_BASE } from '../lib/api';
+import type { ApiTrip, TripStep } from '../lib/types';
 
-// Streaming generation is consumed with the NATIVE EventSource, NOT TanStack
-// Query (see docs/05-frontend.md §2 & §4). This hook owns a local reducer for
-// status / accumulated tokens / result and tears down the connection on unmount.
+import { tripKey } from './useTrips';
 
-export type StreamStatus =
-  'idle' | 'finding-places' | 'building-itinerary' | 'routing' | 'complete' | 'failed';
+// Streaming generation uses the NATIVE EventSource, not TanStack Query (docs/05 §2, §4). The hook
+// owns a reducer for phase / step / narrative / result and closes the connection on unmount.
+
+export type StreamPhase = 'connecting' | 'streaming' | 'complete' | 'failed';
 
 export interface TripStreamState {
-  status: StreamStatus;
+  phase: StreamPhase;
+  step: TripStep | null;
   narrative: string;
-  trip: Trip | null;
+  trip: ApiTrip | null;
   error: string | null;
 }
 
-type StreamAction =
-  | { type: 'status'; status: StreamStatus }
-  | { type: 'token'; token: string }
-  | { type: 'complete'; trip: Trip }
-  | { type: 'failed'; error: string };
+export type StreamAction =
+  | { type: 'status'; step: TripStep }
+  | { type: 'token'; text: string }
+  | { type: 'complete'; trip: ApiTrip }
+  | { type: 'failed'; message: string }
+  | { type: 'reset' };
 
-const initialState: TripStreamState = {
-  status: 'idle',
+export const initialStreamState: TripStreamState = {
+  phase: 'connecting',
+  step: null,
   narrative: '',
   trip: null,
   error: null,
 };
 
-function reducer(state: TripStreamState, action: StreamAction): TripStreamState {
+export function streamReducer(state: TripStreamState, action: StreamAction): TripStreamState {
   switch (action.type) {
     case 'status':
-      return { ...state, status: action.status };
+      return { ...state, phase: 'streaming', step: action.step };
     case 'token':
-      return { ...state, narrative: state.narrative + action.token };
+      return { ...state, phase: 'streaming', narrative: state.narrative + action.text };
     case 'complete':
-      return { ...state, status: 'complete', trip: action.trip };
+      return { ...state, phase: 'complete', trip: action.trip, error: null };
     case 'failed':
-      return { ...state, status: 'failed', error: action.error };
-    default:
-      return state;
+      return { ...state, phase: 'failed', error: action.message };
+    case 'reset':
+      return initialStreamState;
   }
 }
 
+const CONNECTION_LOST = 'We lost the connection while planning your trip.';
+
+const parse = <T>(event: Event): T => JSON.parse((event as MessageEvent<string>).data) as T;
+
 /**
- * Subscribe to the SSE generation stream for a trip. Handles the
- * status / token / complete / failed events. Returns the live view state.
+ * Subscribe to a trip's SSE stream. The API replays the terminal event when a trip already
+ * finished, so this is safe to open at any time. Pass `null` to stay idle.
  */
 export function useTripStream(tripId: string | null): TripStreamState {
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [state, dispatch] = useReducer(streamReducer, initialStreamState);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!tripId) {
-      return;
-    }
+    dispatch({ type: 'reset' });
+    if (!tripId) return;
 
-    const url = `${import.meta.env.VITE_API_URL}/api/v1/trips/${tripId}/stream`;
-    const source = new EventSource(url, { withCredentials: true });
+    const source = new EventSource(`${API_BASE}/trips/${tripId}/stream`, { withCredentials: true });
+    let finished = false;
+
+    const finish = () => {
+      finished = true;
+      source.close();
+    };
 
     source.addEventListener('status', (event) => {
-      dispatch({ type: 'status', status: (event as MessageEvent).data as StreamStatus });
+      dispatch({ type: 'status', step: parse<{ step: TripStep }>(event).step });
     });
-
     source.addEventListener('token', (event) => {
-      dispatch({ type: 'token', token: (event as MessageEvent).data as string });
+      dispatch({ type: 'token', text: parse<{ text: string }>(event).text });
     });
-
     source.addEventListener('complete', (event) => {
-      const trip = JSON.parse((event as MessageEvent).data as string) as Trip;
-      dispatch({ type: 'complete', trip });
-      source.close();
+      finish();
+      dispatch({ type: 'complete', trip: parse<{ trip: ApiTrip }>(event).trip });
+      void queryClient.invalidateQueries({ queryKey: tripKey(tripId) });
+      void queryClient.invalidateQueries({ queryKey: ['trips'] });
     });
-
     source.addEventListener('failed', (event) => {
-      dispatch({ type: 'failed', error: (event as MessageEvent).data as string });
-      source.close();
+      finish();
+      dispatch({ type: 'failed', message: parse<{ message: string }>(event).message });
+      void queryClient.invalidateQueries({ queryKey: tripKey(tripId) });
     });
 
+    // The browser retries dropped connections itself (readyState CONNECTING); only a permanently
+    // closed source (e.g. a 401/404 response) is a failure.
     source.onerror = () => {
-      dispatch({ type: 'failed', error: 'Connection lost. Please retry.' });
-      source.close();
+      if (!finished && source.readyState === EventSource.CLOSED) {
+        finish();
+        dispatch({ type: 'failed', message: CONNECTION_LOST });
+      }
     };
 
-    return () => {
-      source.close();
-    };
-  }, [tripId]);
+    return finish;
+  }, [tripId, queryClient]);
 
   return state;
 }

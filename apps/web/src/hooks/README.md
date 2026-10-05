@@ -1,6 +1,11 @@
-# hooks/
+# hooks
 
-Data + SSE hooks — the boundary that encapsulates all server state, caching, and the streaming lifecycle (see [docs/05-frontend.md](../../../../docs/05-frontend.md) §2 & §3). Presentational components receive plain props and never fetch.
+All server state and the SSE lifecycle. Cache keys: `['session']`, `['cities']`, `['trips']`, `['trip', id]`, `['shared', token]`.
 
-- `useTrips.ts` — TanStack Query hooks: `usePlaces`, `useTrip`, `useTrips`, plus `useCreateTrip` / `useDeleteTrip` / `useRegenerateTrip` mutations. Cache-key convention: `['trips']`, `['trip', id]`, `['places', query]`.
-- `useTripStream.ts` — native `EventSource` hook for generation streaming (NOT Query). Owns its own reducer; tears down on unmount.
+| File               | Exports                                                                                                                     |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `useAuth.ts`       | `useSession`, `useSignIn`, `useSignUp`, `useSignOut` (clears cached data on auth changes).                                  |
+| `useTrips.ts`      | `useCities`, `useTrips`, `useTrip`, `useSharedTrip`, `useCreateTrip`, `useDeleteTrip`, `useRegenerateTrip`, `useShareTrip`. |
+| `useTripStream.ts` | Native `EventSource` reducer for status, tokens, and the terminal event; refreshes trip caches when done.                   |
+
+The API replays a trip's terminal event on connect, so the stream is safe to open at any time.
