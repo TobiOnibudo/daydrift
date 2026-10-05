@@ -18,7 +18,8 @@
     "seed": "pnpm --filter @daydrift/core seed",
     "clean": "turbo run clean && rimraf node_modules",
     "prepare": "husky",
-    "eval": "pnpm --filter @daydrift/core eval"
+    "eval": "pnpm --filter @daydrift/core eval",
+    "test:integration": "pnpm --filter @daydrift/core test:integration"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.0.0",
