@@ -12,3 +12,4 @@ export * from './seeding/mapping.js';
 export * from './normalization.js';
 export * from './trip-cache.js';
 export { closeRedis, getRedis } from './redis.js';
+export * from './trips/repository.js';
