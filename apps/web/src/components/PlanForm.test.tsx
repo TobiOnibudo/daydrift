@@ -92,3 +92,51 @@ describe('PlanForm', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('We could not start your trip.');
   });
 });
+
+describe('PlanForm feedback', () => {
+  const addInterest = async (user: ReturnType<typeof userEvent.setup>, text: string) => {
+    await user.type(screen.getByLabelText(/add your own interest/i), `${text}{Enter}`);
+  };
+
+  it('explains why a custom interest was rejected and keeps what was typed', async () => {
+    const { user } = setup();
+    await addInterest(user, '<script>');
+    expect(screen.getByText(/letters, numbers/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/add your own interest/i)).toHaveValue('<script>');
+    expect(screen.getByLabelText(/add your own interest/i)).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('tells the person when an interest is already on the list, and clears once they edit', async () => {
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: 'art' }));
+    await addInterest(user, 'Art');
+    expect(screen.getByText(/"art" is already on your list/)).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText(/add your own interest/i), 'x');
+    expect(screen.queryByText(/already on your list/)).not.toBeInTheDocument();
+  });
+
+  it('asks for text when Add is pressed with nothing typed', async () => {
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: /add/i }));
+    expect(screen.getByText(/type an interest to add it/i)).toBeInTheDocument();
+  });
+
+  it('shows how many interests are chosen', async () => {
+    const { user } = setup();
+    expect(screen.getByText('0 of 10 chosen')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'art' }));
+    expect(screen.getByText('1 of 10 chosen')).toBeInTheDocument();
+  });
+
+  it('puts server-reported problems next to their fields and focuses the summary', () => {
+    setup({
+      error: 'Please fix the highlighted fields and try again.',
+      fieldErrors: { city: 'Choose a city.', duration: 'Choose how long you have.' },
+    });
+    expect(screen.getByRole('alert')).toHaveFocus();
+    expect(screen.getByLabelText(/where are you headed/i)).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('Choose a city.')).toBeInTheDocument();
+    expect(screen.getByText('Choose how long you have.')).toBeInTheDocument();
+  });
+});

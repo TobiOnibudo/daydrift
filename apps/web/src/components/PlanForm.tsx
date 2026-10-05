@@ -1,15 +1,16 @@
 import { Plus, Sparkles } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import type { CitySummary, CreateTripPayload, Duration, TravelMode } from '../lib/types';
 import { cn } from '../lib/utils';
+import { MAX_INTEREST_LENGTH, MAX_INTERESTS, validateInterest } from '../lib/validation';
 
-import { Badge } from './ui/badge';
 import { Button } from './ui/button';
+import { Field } from './ui/field';
 import { Input } from './ui/input';
 import { Segmented, type SegmentedOption } from './ui/segmented';
 
-export const MAX_INTERESTS = 10;
+export { MAX_INTERESTS };
 
 const SUGGESTIONS = [
   'art',
@@ -38,20 +39,31 @@ const MODES: SegmentedOption<TravelMode>[] = [
 interface PlanFormProps {
   cities: CitySummary[];
   submitting: boolean;
+  /** A summary of what went wrong with the last submission. */
   error?: string | null;
+  /** Server-reported problems, shown next to the field they belong to. */
+  fieldErrors?: Partial<Record<'city' | 'interests' | 'duration' | 'travelMode', string>>;
   onSubmit: (payload: CreateTripPayload) => void;
 }
 
-export function PlanForm({ cities, submitting, error, onSubmit }: PlanFormProps) {
+export function PlanForm({ cities, submitting, error, fieldErrors = {}, onSubmit }: PlanFormProps) {
   const [city, setCity] = useState(cities[0]?.key ?? '');
   const [interests, setInterests] = useState<string[]>([]);
   const [custom, setCustom] = useState('');
+  const [customError, setCustomError] = useState<string | null>(null);
   const [duration, setDuration] = useState<Duration>('half-day');
   const [mode, setMode] = useState<TravelMode>('walking');
+  const summaryRef = useRef<HTMLParagraphElement>(null);
 
   const atLimit = interests.length >= MAX_INTERESTS;
 
-  const toggle = (interest: string) =>
+  // Move focus to the summary when a submission fails, so the message is announced and reachable.
+  useEffect(() => {
+    if (error) summaryRef.current?.focus();
+  }, [error]);
+
+  const toggle = (interest: string) => {
+    setCustomError(null);
     setInterests((current) =>
       current.includes(interest)
         ? current.filter((i) => i !== interest)
@@ -59,11 +71,21 @@ export function PlanForm({ cities, submitting, error, onSubmit }: PlanFormProps)
           ? current
           : [...current, interest],
     );
+  };
 
   const addCustom = () => {
-    const value = custom.trim().toLowerCase();
-    if (value && !atLimit && !interests.includes(value)) setInterests([...interests, value]);
+    if (!custom.trim()) {
+      setCustomError(validateInterest(custom, interests));
+      return;
+    }
+    const problem = validateInterest(custom, interests);
+    if (problem) {
+      setCustomError(problem);
+      return;
+    }
+    setInterests([...interests, custom.trim().toLowerCase()]);
     setCustom('');
+    setCustomError(null);
   };
 
   const handleSubmit = (event: FormEvent) => {
@@ -76,12 +98,19 @@ export function PlanForm({ cities, submitting, error, onSubmit }: PlanFormProps)
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8" noValidate>
-      <div className="space-y-2">
-        <label htmlFor="city" className="text-sm font-medium">
-          Where are you headed?
-        </label>
+      {error && (
+        <p
+          ref={summaryRef}
+          tabIndex={-1}
+          role="alert"
+          className="bg-destructive/10 text-destructive rounded-md px-4 py-3 text-sm"
+        >
+          {error}
+        </p>
+      )}
+
+      <Field id="city" label="Where are you headed?" error={fieldErrors.city}>
         <select
-          id="city"
           value={city}
           onChange={(e) => setCity(e.target.value)}
           className="border-input bg-card flex h-11 w-full rounded-md border px-3 text-sm"
@@ -92,7 +121,7 @@ export function PlanForm({ cities, submitting, error, onSubmit }: PlanFormProps)
             </option>
           ))}
         </select>
-      </div>
+      </Field>
 
       <fieldset className="space-y-3">
         <legend className="text-sm font-medium">What are you into?</legend>
@@ -121,33 +150,46 @@ export function PlanForm({ cities, submitting, error, onSubmit }: PlanFormProps)
             );
           })}
         </div>
-        <div className="flex gap-2">
-          <Input
-            aria-label="Add your own interest"
-            placeholder="Something else? e.g. street art"
-            value={custom}
-            maxLength={50}
-            disabled={atLimit}
-            onChange={(e) => setCustom(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                addCustom();
-              }
-            }}
-          />
+
+        <div className="flex items-start gap-2">
+          <Field
+            id="custom-interest"
+            label="Add your own interest"
+            error={customError ?? fieldErrors.interests}
+            hint={
+              atLimit
+                ? `You have reached the limit of ${MAX_INTERESTS} interests.`
+                : `${interests.length} of ${MAX_INTERESTS} chosen`
+            }
+            className="flex-1"
+          >
+            <Input
+              placeholder="Something else? e.g. street art"
+              value={custom}
+              maxLength={MAX_INTEREST_LENGTH + 20}
+              disabled={atLimit}
+              onChange={(e) => {
+                setCustom(e.target.value);
+                if (customError) setCustomError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  addCustom();
+                }
+              }}
+            />
+          </Field>
           <Button
             type="button"
             variant="outline"
             onClick={addCustom}
-            disabled={!custom.trim() || atLimit}
+            disabled={atLimit}
+            className="mt-[1.625rem]"
           >
             <Plus aria-hidden="true" /> Add
           </Button>
         </div>
-        {atLimit && (
-          <Badge variant="outline">You have reached the limit of {MAX_INTERESTS} interests</Badge>
-        )}
       </fieldset>
 
       <div className="space-y-2">
@@ -158,18 +200,16 @@ export function PlanForm({ cities, submitting, error, onSubmit }: PlanFormProps)
           options={DURATIONS}
           onChange={setDuration}
         />
+        {fieldErrors.duration && <p className="text-destructive text-sm">{fieldErrors.duration}</p>}
       </div>
 
       <div className="space-y-2">
         <span className="text-sm font-medium">How are you getting around?</span>
         <Segmented label="Travel mode" value={mode} options={MODES} onChange={setMode} />
+        {fieldErrors.travelMode && (
+          <p className="text-destructive text-sm">{fieldErrors.travelMode}</p>
+        )}
       </div>
-
-      {error && (
-        <p role="alert" className="bg-destructive/10 text-destructive rounded-md px-4 py-3 text-sm">
-          {error}
-        </p>
-      )}
 
       <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={!city || submitting}>
         <Sparkles aria-hidden="true" />

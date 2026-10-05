@@ -1,32 +1,33 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FocusEvent, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Field } from '../components/ui/field';
 import { Input } from '../components/ui/input';
 import { useSession, useSignIn, useSignUp } from '../hooks/useAuth';
-import { ApiError } from '../lib/api';
+import { describeError } from '../lib/errors';
+import {
+  MAX_EMAIL,
+  MAX_NAME,
+  validateEmail,
+  validateName,
+  validatePassword,
+} from '../lib/validation';
 
 type Mode = 'signin' | 'signup';
+type FieldName = 'name' | 'email' | 'password';
+type Errors = Partial<Record<FieldName, string>>;
 
-const MIN_PASSWORD = 8;
-
-function describeError(error: unknown): string {
-  if (error instanceof ApiError) {
-    if (error.status === 401) return 'That email and password do not match.';
-    if (error.status === 429) return 'Too many attempts. Please wait a moment and try again.';
-    return error.message;
-  }
-  return 'We could not reach the server. Check your connection and try again.';
-}
+const FIELD_ORDER: FieldName[] = ['name', 'email', 'password'];
 
 export function AuthPage() {
   const [mode, setMode] = useState<Mode>('signin');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [values, setValues] = useState({ name: '', email: '', password: '' });
+  const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const formErrorRef = useRef<HTMLParagraphElement>(null);
 
   const { data: user } = useSession();
   const signIn = useSignIn();
@@ -38,29 +39,81 @@ export function AuthPage() {
 
   if (user) return <Navigate to={from} replace />;
 
+  const check = (field: FieldName, value: string): string | null => {
+    if (field === 'name') return mode === 'signup' ? validateName(value) : null;
+    if (field === 'email') return validateEmail(value);
+    return validatePassword(value, mode);
+  };
+
+  const validateAll = (): Errors => {
+    const found: Errors = {};
+    for (const field of FIELD_ORDER) {
+      const message = check(field, values[field]);
+      if (message) found[field] = message;
+    }
+    return found;
+  };
+
+  const update = (field: FieldName, value: string) => {
+    setValues((v) => ({ ...v, [field]: value }));
+    // Clear a field's error as soon as the person starts fixing it.
+    if (errors[field]) setErrors((e) => ({ ...e, [field]: undefined }));
+    if (formError) setFormError(null);
+  };
+
+  // Don't validate when focus is moving to the submit button: showing a message now would shift
+  // the layout between mousedown and mouseup and swallow the click. Submit validates everything.
+  const validateOnBlur = (field: FieldName, event: FocusEvent<HTMLInputElement>) => {
+    const next = event.relatedTarget;
+    if (next instanceof HTMLButtonElement && next.type === 'submit') return;
+    const message = values[field] ? check(field, values[field]) : null;
+    setErrors((e) => ({ ...e, [field]: message ?? undefined }));
+  };
+
+  const focusFirst = (found: Errors) => {
+    const first = FIELD_ORDER.find((f) => found[f]);
+    if (first) document.getElementById(first)?.focus();
+    else formErrorRef.current?.focus();
+  };
+
+  const switchMode = () => {
+    setMode(mode === 'signin' ? 'signup' : 'signin');
+    setErrors({});
+    setFormError(null);
+  };
+
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
+    if (pending) return;
+
+    const found = validateAll();
+    setErrors(found);
     setFormError(null);
-
-    if (password.length < MIN_PASSWORD) {
-      setFormError(`Use at least ${MIN_PASSWORD} characters for your password.`);
-      return;
-    }
-    if (mode === 'signup' && !name.trim()) {
-      setFormError('Tell us what to call you.');
+    if (Object.keys(found).length > 0) {
+      focusFirst(found);
       return;
     }
 
-    const done = {
+    const handlers = {
       onSuccess: () => {
         toast.success(mode === 'signup' ? 'Welcome to Daydrift!' : 'Welcome back!');
         navigate(from, { replace: true });
       },
-      onError: (error: unknown) => setFormError(describeError(error)),
+      onError: (error: unknown) => {
+        const described = describeError(error);
+        const fromServer = described.fieldErrors as Errors;
+        setErrors(fromServer);
+        setFormError(described.message);
+        queueMicrotask(() => focusFirst(fromServer));
+      },
     };
 
-    if (mode === 'signup') signUp.mutate({ name: name.trim(), email, password }, done);
-    else signIn.mutate({ email, password }, done);
+    const email = values.email.trim();
+    if (mode === 'signup') {
+      signUp.mutate({ name: values.name.trim(), email, password: values.password }, handlers);
+    } else {
+      signIn.mutate({ email, password: values.password }, handlers);
+    }
   };
 
   return (
@@ -78,55 +131,52 @@ export function AuthPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-            {mode === 'signup' && (
-              <div className="space-y-1.5">
-                <label htmlFor="name" className="text-sm font-medium">
-                  Name
-                </label>
-                <Input
-                  id="name"
-                  autoComplete="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </div>
-            )}
-            <div className="space-y-1.5">
-              <label htmlFor="email" className="text-sm font-medium">
-                Email
-              </label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label htmlFor="password" className="text-sm font-medium">
-                Password
-              </label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-                required
-                minLength={MIN_PASSWORD}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-
             {formError && (
               <p
+                ref={formErrorRef}
+                tabIndex={-1}
                 role="alert"
                 className="bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm"
               >
                 {formError}
               </p>
             )}
+
+            {mode === 'signup' && (
+              <Field id="name" label="Name" error={errors.name}>
+                <Input
+                  autoComplete="name"
+                  maxLength={MAX_NAME + 20}
+                  value={values.name}
+                  onChange={(e) => update('name', e.target.value)}
+                  onBlur={(e) => validateOnBlur('name', e)}
+                />
+              </Field>
+            )}
+            <Field id="email" label="Email" error={errors.email}>
+              <Input
+                type="email"
+                autoComplete="email"
+                maxLength={MAX_EMAIL + 20}
+                value={values.email}
+                onChange={(e) => update('email', e.target.value)}
+                onBlur={(e) => validateOnBlur('email', e)}
+              />
+            </Field>
+            <Field
+              id="password"
+              label="Password"
+              error={errors.password}
+              hint={mode === 'signup' ? 'At least 8 characters.' : undefined}
+            >
+              <Input
+                type="password"
+                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+                value={values.password}
+                onChange={(e) => update('password', e.target.value)}
+                onBlur={(e) => validateOnBlur('password', e)}
+              />
+            </Field>
 
             <Button type="submit" className="w-full" disabled={pending}>
               {pending ? 'One moment…' : mode === 'signin' ? 'Sign in' : 'Create account'}
@@ -138,10 +188,7 @@ export function AuthPage() {
             <button
               type="button"
               className="text-primary font-medium underline-offset-4 hover:underline"
-              onClick={() => {
-                setMode(mode === 'signin' ? 'signup' : 'signin');
-                setFormError(null);
-              }}
+              onClick={switchMode}
             >
               {mode === 'signin' ? 'Create an account' : 'Sign in'}
             </button>
