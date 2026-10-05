@@ -19,7 +19,8 @@
     "clean": "turbo run clean && rimraf node_modules",
     "prepare": "husky",
     "eval": "pnpm --filter @daydrift/core eval",
-    "test:integration": "pnpm --filter @daydrift/core test:integration"
+    "test:integration": "pnpm --filter @daydrift/core test:integration",
+    "e2e": "pnpm build && pnpm --filter @daydrift/e2e e2e"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.0.0",

@@ -1,0 +1,24 @@
+{
+  "name": "@daydrift/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "e2e": "playwright test",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@daydrift/ai": "workspace:*",
+    "@daydrift/config": "workspace:*",
+    "@daydrift/db": "workspace:*"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.0",
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^20.0.0",
+    "drizzle-orm": "^0.33.0",
+    "postgres": "^3.4.0",
+    "ioredis": "^5.4.0"
+  }
+}

@@ -62,3 +62,4 @@ export function streamText(opts: StreamTextOptions) {
     ...llmLimits(),
   });
 }
+export { mockEmbedding } from './mock-provider.js';
