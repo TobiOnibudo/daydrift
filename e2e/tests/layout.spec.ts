@@ -34,7 +34,13 @@ for (const size of [...DESKTOPS, ...SMALL]) {
       await settle(page);
       const landing = await overflow(page);
       expect(landing.horizontal, 'landing sideways overflow').toBeLessThanOrEqual(0);
-      if (desktop) expect(landing.vertical, 'landing fits the screen').toBeLessThanOrEqual(1);
+      if (desktop) {
+        // The hero fills the first screen; the sample day below it is reached by scrolling.
+        const heroBottom = await page.evaluate(
+          () => document.querySelector('section')?.getBoundingClientRect().bottom ?? 0,
+        );
+        expect(heroBottom, 'landing hero fits the screen').toBeLessThanOrEqual(size.height + 1);
+      }
 
       await page.goto('/auth');
       await settle(page);
