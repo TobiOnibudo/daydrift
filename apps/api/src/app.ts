@@ -1,7 +1,11 @@
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 import { config } from '@daydrift/config';
 import { createAiPlanQueue, type AiPlanJobData } from '@daydrift/queue';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
+import fastifyStatic from '@fastify/static';
 import type { Queue } from 'bullmq';
 import Fastify from 'fastify';
 
@@ -23,12 +27,18 @@ export interface AppOptions {
   /** Override the ai-plan producer (tests). Defaults to the real BullMQ queue. */
   aiPlanQueue?: AiPlanQueue;
   logger?: boolean;
+  /** Directory with the built SPA. Defaults to apps/web/dist; set false to disable. */
+  webDist?: string | false;
 }
+
+const DEFAULT_WEB_DIST = fileURLToPath(new URL('../../web/dist', import.meta.url));
 
 export async function buildApp(options: AppOptions = {}) {
   const app = Fastify({ logger: options.logger ?? true, trustProxy: true });
 
-  registerErrorHandlers(app);
+  const webDist = options.webDist ?? DEFAULT_WEB_DIST;
+  const serveSpa = webDist !== false && existsSync(`${webDist}/index.html`);
+  registerErrorHandlers(app, { spaFallback: serveSpa });
 
   // CORS: prod locks to the web origin; dev is permissive. Credentials for cookie auth.
   await app.register(cors, { origin: isProd ? config.webUrl : true, credentials: true });
@@ -45,6 +55,20 @@ export async function buildApp(options: AppOptions = {}) {
   app.addHook('onClose', async () => {
     await queue.close();
   });
+
+  if (serveSpa) {
+    // Vite emits content-hashed files under /assets, so those cache forever; everything else revalidates.
+    await app.register(fastifyStatic, {
+      root: webDist,
+      wildcard: false,
+      setHeaders: (res, path) => {
+        res.setHeader(
+          'Cache-Control',
+          /[\\/]assets[\\/]/.test(path) ? 'public, max-age=31536000, immutable' : 'no-cache',
+        );
+      },
+    });
+  }
 
   await app.register(healthRoutes);
   await app.register(betterAuthRoutes);

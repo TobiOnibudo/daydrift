@@ -3,9 +3,17 @@ import type { FastifyInstance } from 'fastify';
 import { AppError, errorEnvelope } from '../lib/errors.js';
 
 /** Central handlers emitting the error envelope; unknown errors are logged, never leaked (docs/04 §2). */
-export function registerErrorHandlers(app: FastifyInstance): void {
-  app.setNotFoundHandler((_request, reply) => {
-    reply.status(404).send(errorEnvelope('NOT_FOUND', 'Route not found'));
+export function registerErrorHandlers(
+  app: FastifyInstance,
+  options: { spaFallback?: boolean } = {},
+): void {
+  // Browser navigations to client-side routes get the SPA; API and asset misses stay JSON 404s.
+  app.setNotFoundHandler((request, reply) => {
+    const isApi = request.url.startsWith('/api/') || request.url.startsWith('/health');
+    if (options.spaFallback && request.method === 'GET' && !isApi && !request.url.includes('.')) {
+      return reply.header('Cache-Control', 'no-cache').sendFile('index.html');
+    }
+    return reply.status(404).send(errorEnvelope('NOT_FOUND', 'Route not found'));
   });
 
   app.setErrorHandler((error, request, reply) => {
