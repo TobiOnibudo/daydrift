@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "clean": "rimraf dist",
     "lint": "eslint src",
-    "test": "echo \"no tests yet\""
+    "test": "vitest run"
   },
   "dependencies": {
     "@daydrift/ai": "workspace:*",
@@ -20,10 +20,11 @@
     "@daydrift/queue": "workspace:*",
     "@daydrift/types": "workspace:*",
     "ioredis": "^5.4.0",
-    "zod": "^3.23.0"
+    "pino": "^9.4.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "tsx": "^4.7.0"
+    "tsx": "^4.7.0",
+    "vitest": "^2.1.0"
   }
 }
