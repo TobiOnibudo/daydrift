@@ -204,6 +204,21 @@ test.describe('when things go wrong', () => {
     await startPlan(page);
     await expect(page.getByRole('alert')).toContainText(/lost the connection/i);
 
+    // Only the page is faked. If the plan was not already cached, the real trip is still being
+    // generated, and asking to regenerate it now would (correctly) be refused as a conflict.
+    const tripId = page.url().split('/').pop();
+    await expect
+      .poll(
+        async () =>
+          (
+            (await (await page.request.get(`/api/v1/trips/${tripId}`)).json()) as {
+              trip: { status: string };
+            }
+          ).trip.status,
+        { timeout: 30_000 },
+      )
+      .toBe('complete');
+
     blocked = false;
     await page.getByRole('button', { name: 'Try again' }).click();
     await expect(page.getByRole('list', { name: 'Itinerary stops' })).toBeVisible({
