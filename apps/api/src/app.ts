@@ -48,7 +48,7 @@ export async function buildApp(options: AppOptions = {}) {
   // Rate limiting (docs/04 §7) covers the API only: the SPA's scripts, styles and fonts, and the
   // health probes, must never count against a visitor. Trip creation has its own, tighter limit.
   await app.register(rateLimit, {
-    max: options.rateLimit?.max ?? (isProd ? 300 : 10_000),
+    max: options.rateLimit?.max ?? config.rateLimitMax ?? (isProd ? 300 : 10_000),
     timeWindow: options.rateLimit?.timeWindow ?? (isProd ? '15 minutes' : '1 minute'),
     allowList: (req) => !req.url.startsWith('/api/'),
   });

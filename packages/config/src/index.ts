@@ -82,6 +82,8 @@ const envSchema = z.object({
 
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
+  // Requests per window per client on /api/*. Defaults: 300 per 15 min in production, 10000 per min otherwise.
+  RATE_LIMIT_MAX: z.coerce.number().int().positive().optional(),
 });
 
 // A blank value (`EMBEDDING_DIM=` in a .env file) means "unset", not an empty string or zero.
@@ -150,6 +152,7 @@ export const EMBEDDING_DIM: number = resolveEmbeddingDim();
 export const config = Object.freeze({
   nodeEnv: env.NODE_ENV,
   port: env.PORT,
+  rateLimitMax: env.RATE_LIMIT_MAX,
   webUrl: env.WEB_URL,
   database: {
     url: databaseUrl,
