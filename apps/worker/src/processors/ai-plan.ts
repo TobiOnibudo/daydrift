@@ -35,6 +35,9 @@ export interface AiPlanDeps {
   log(message: string, meta?: Record<string, unknown>): void;
 }
 
+const FALLBACK_NARRATIVE =
+  "I couldn't write my full notes this time, so I picked a sensible route between the best matches for what you like. Tell me what you'd like changed and I'll adjust it.";
+
 const FAILURE_MESSAGE = 'We could not generate your itinerary. Please try again.';
 
 const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
@@ -55,7 +58,7 @@ export function createAiPlanProcessor(deps: AiPlanDeps) {
       deps.log(message, { jobId: job.id, tripId, ...meta });
 
     const routeLegs = async (
-      meta: Pick<TripResult, 'title' | 'vibeTags'>,
+      meta: Pick<TripResult, 'title' | 'vibeTags' | 'narrative'>,
       legs: TripLeg[],
     ): Promise<TripResult> => {
       let routeGeojson: unknown = null;
@@ -70,16 +73,24 @@ export function createAiPlanProcessor(deps: AiPlanDeps) {
       return { ...meta, legs, routeGeojson, totalDistanceKm: round2(km) };
     };
 
-    const streamNarrative = async (itinerary: ItineraryOutput, candidates: Place[]) => {
+    // Streams the guide's note to the client as it is written and returns the whole text so it can
+    // be saved with the trip. A stream that breaks midway keeps what was written.
+    const streamNarrative = async (
+      itinerary: ItineraryOutput,
+      candidates: Place[],
+    ): Promise<string> => {
+      let written = '';
       try {
         for await (const text of deps.streamNarrative(
           buildNarrativePrompt(itinerary, candidates),
         )) {
+          written += text;
           await deps.publish(tripId, { event: 'token', data: { text } });
         }
       } catch (err) {
         log('narrative streaming failed; continuing without it', { err: String(err) });
       }
+      return written;
     };
 
     if (!(await deps.claimTrip(tripId))) {
@@ -109,14 +120,21 @@ export function createAiPlanProcessor(deps: AiPlanDeps) {
           await deps.planItinerary(buildItineraryPrompt(candidates, input)),
           candidates,
         );
-        await streamNarrative(itinerary, candidates);
+        const narrative = (await streamNarrative(itinerary, candidates)).trim();
 
         await deps.publish(tripId, {
           event: 'status',
           data: { step: 'routing', label: 'Mapping the route' },
         });
         const legs = normalizeItineraryLegs(itinerary.legs, candidates, range.min, range.max);
-        result = await routeLegs({ title: itinerary.title, vibeTags: itinerary.vibeTags }, legs);
+        result = await routeLegs(
+          {
+            title: itinerary.title,
+            vibeTags: itinerary.vibeTags,
+            ...(narrative ? { narrative } : {}),
+          },
+          legs,
+        );
       } catch (err) {
         log('generation failed; building fallback itinerary', { err: String(err) });
         const legs = buildFallbackItinerary(candidates, range.min, range.max);
@@ -124,6 +142,7 @@ export function createAiPlanProcessor(deps: AiPlanDeps) {
           {
             title: `${titleCase(input.city)}: ${input.duration} by ${input.travelMode}`,
             vibeTags: input.interests.slice(0, 3),
+            narrative: FALLBACK_NARRATIVE,
           },
           legs,
         );

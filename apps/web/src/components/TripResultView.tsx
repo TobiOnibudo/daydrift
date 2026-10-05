@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 import { googleRouteUrl } from '../lib/maps-links';
 import type { SharedApiTrip } from '../lib/types';
 
+import { GuideNote } from './GuideNote';
 import { ItineraryList } from './ItineraryList';
 import { TripMap } from './TripMap';
 import { Badge } from './ui/badge';
@@ -103,6 +104,7 @@ export function TripResultView({ trip, actions, back }: TripResultViewProps) {
       </div>
 
       <div className="min-h-0 lg:col-start-1 lg:row-start-2 lg:overflow-y-auto lg:overscroll-contain lg:px-1 lg:py-2 lg:pr-3">
+        <GuideNote text={trip.narrative} className="mb-5" />
         <ItineraryList
           legs={trip.legs}
           travelMode={trip.travelMode}

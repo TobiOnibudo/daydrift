@@ -103,6 +103,9 @@ describe('ai-plan processor', () => {
     expect(saved.totalDistanceKm).toBe(3.46);
     expect(deps.cacheResult).toHaveBeenCalledOnce();
     expect(deps.failTrip).not.toHaveBeenCalled();
+    // What the guide said is saved with the trip, so it can be read later.
+    expect(saved.narrative).toBe('Start here.');
+    expect(vi.mocked(deps.cacheResult).mock.calls[0]?.[1].narrative).toBe('Start here.');
   });
 
   it('skips work when the trip is gone or already finished', async () => {
@@ -119,6 +122,7 @@ describe('ai-plan processor', () => {
     const [, saved] = vi.mocked(deps.completeTrip).mock.calls[0]!;
     expect(saved.legs).toHaveLength(3);
     expect(saved.title).toContain('Toronto');
+    expect(saved.narrative).toMatch(/couldn't write my full notes/);
     expect(deps.cacheResult).not.toHaveBeenCalled();
     expect(eventNames().at(-1)).toBe('complete');
     expect(deps.failTrip).not.toHaveBeenCalled();
@@ -152,6 +156,8 @@ describe('ai-plan processor', () => {
 
     expect(eventNames()).toContain('token');
     expect(eventNames().at(-1)).toBe('complete');
+    // Whatever was written before the stream broke is kept.
+    expect(vi.mocked(deps.completeTrip).mock.calls[0]?.[1].narrative).toBe('partial');
   });
 
   it('does not publish complete if the trip was deleted mid-run', async () => {

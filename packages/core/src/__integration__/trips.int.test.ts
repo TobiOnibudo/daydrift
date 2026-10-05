@@ -37,6 +37,7 @@ const result = {
   routeGeojson: { type: 'LineString', coordinates: [[-79.38, 43.65]] },
   totalDistanceKm: 1.5,
   vibeTags: ['chill'],
+  narrative: 'Start slow, finish with a view.',
 };
 
 let alice: string;
@@ -62,6 +63,7 @@ describe('trip repository (real Postgres)', () => {
     expect(stored?.legs).toEqual(result.legs);
     expect(stored?.routeGeojson).toEqual(result.routeGeojson);
     expect(stored?.vibeTags).toEqual(['chill']);
+    expect(stored?.narrative).toBe('Start slow, finish with a view.');
   });
 
   it('creates an already-complete trip from a cached result', async () => {

@@ -19,6 +19,7 @@ export function tripFromRow(row: TripRow): Trip {
     routeGeojson: row.routeGeojson,
     totalDistanceKm: row.totalDistanceKm,
     vibeTags: row.vibeTags ?? [],
+    narrative: row.narrative,
     status: row.status,
     shareToken: row.shareToken,
     createdAt: row.createdAt,
@@ -41,6 +42,7 @@ const resultColumns = (result: TripResult) => ({
   routeGeojson: result.routeGeojson ?? null,
   totalDistanceKm: result.totalDistanceKm,
   vibeTags: result.vibeTags,
+  narrative: result.narrative ?? null,
 });
 
 /** Insert a trip for `userId`; pass a cached `result` to create it already complete. */
@@ -134,6 +136,7 @@ export async function resetTrip(id: string, userId: string): Promise<Trip | null
       routeGeojson: null,
       totalDistanceKm: null,
       vibeTags: null,
+      narrative: null,
     })
     .where(and(eq(trips.id, id), eq(trips.userId, userId)))
     .returning();

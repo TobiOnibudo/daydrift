@@ -113,6 +113,7 @@ export const trips = pgTable(
     routeGeojson: jsonb('route_geojson'),
     totalDistanceKm: real('total_distance_km'),
     vibeTags: jsonb('vibe_tags').$type<string[]>(),
+    narrative: text('narrative'),
     status: text('status').$type<TripStatus>().notNull().default('pending'),
     inputHash: text('input_hash').notNull(),
     shareToken: text('share_token').unique(),

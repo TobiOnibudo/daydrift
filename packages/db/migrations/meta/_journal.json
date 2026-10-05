@@ -15,6 +15,13 @@
       "when": 1791164946069,
       "tag": "0001_modern_aqueduct",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791176987869,
+      "tag": "0002_flashy_prima",
+      "breakpoints": true
     }
   ]
 }

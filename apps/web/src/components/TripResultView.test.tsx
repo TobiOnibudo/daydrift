@@ -73,3 +73,17 @@ describe('TripResultView list and map linking', () => {
     expect(screen.getByTestId('map')).toHaveAttribute('data-hovered', 'a');
   });
 });
+
+describe('TripResultView guide note', () => {
+  it('shows what the guide said, when the trip has a narrative', () => {
+    render(<TripResultView trip={{ ...trip, narrative: 'Start with art, end with a stroll.' }} />);
+    expect(screen.getByRole('region', { name: 'From your guide' })).toHaveTextContent(
+      'Start with art, end with a stroll.',
+    );
+  });
+
+  it('omits the note for trips planned before narratives were saved', () => {
+    render(<TripResultView trip={trip} />);
+    expect(screen.queryByRole('region', { name: 'From your guide' })).not.toBeInTheDocument();
+  });
+});

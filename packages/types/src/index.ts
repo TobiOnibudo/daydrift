@@ -88,6 +88,8 @@ export const TripSchema = z.object({
   routeGeojson: z.unknown(),
   totalDistanceKm: z.number().nullable().optional(),
   vibeTags: z.array(z.string()),
+  /** What the guide said about the day (empty for trips planned before narratives were saved). */
+  narrative: z.string().nullable().optional(),
   status: TripStatusSchema,
   shareToken: z.string().nullable().optional(),
   createdAt: z.date(),
@@ -101,6 +103,7 @@ export const TripResultSchema = z.object({
   routeGeojson: z.unknown(),
   totalDistanceKm: z.number(),
   vibeTags: z.array(z.string()),
+  narrative: z.string().optional(),
 });
 export type TripResult = z.infer<typeof TripResultSchema>;
 
