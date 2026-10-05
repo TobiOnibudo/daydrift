@@ -1,74 +1,74 @@
-import { useTripStream, type StreamStatus } from '../hooks/useTripStream';
+import { RotateCcw } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
-// Maps the SSE generation stream to a single view (see docs/05-frontend.md §4).
-// Presentational: receives the trip id, consumes useTripStream, renders the
-// progress stepper + streaming narrative + skeletons until `complete`.
+import { useTripStream } from '../hooks/useTripStream';
 
-const STEPS: { status: StreamStatus; label: string }[] = [
-  { status: 'finding-places', label: 'Finding places' },
-  { status: 'building-itinerary', label: 'Building itinerary' },
-  { status: 'routing', label: 'Routing' },
-];
-
-interface ProgressStepperProps {
-  status: StreamStatus;
-}
-
-function ProgressStepper({ status }: ProgressStepperProps) {
-  const activeIndex = STEPS.findIndex((step) => step.status === status);
-  return (
-    <ol className="flex gap-4">
-      {STEPS.map((step, index) => (
-        <li
-          key={step.status}
-          aria-current={step.status === status ? 'step' : undefined}
-          className={index <= activeIndex ? 'font-semibold' : 'text-gray-400'}
-        >
-          {step.label}
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-function Skeleton() {
-  return <div className="h-24 w-full animate-pulse rounded bg-gray-200" aria-hidden="true" />;
-}
+import { ProgressStepper } from './ProgressStepper';
+import { StreamingNarrative } from './StreamingNarrative';
+import { RouteTrace } from './route/RouteTrace';
+import { ErrorState } from './states';
+import { Button } from './ui/button';
+import { Card } from './ui/card';
+import { Skeleton } from './ui/skeleton';
 
 interface TripGenerationViewProps {
   tripId: string;
-  onRetry?: () => void;
+  onRetry: () => void;
+  retrying?: boolean;
 }
 
-export function TripGenerationView({ tripId, onRetry }: TripGenerationViewProps) {
-  const { status, narrative, trip, error } = useTripStream(tripId);
+const SLOW_HINT_AFTER_MS = 20_000;
 
-  if (status === 'failed') {
+/** Maps the SSE stream to one view (docs/05 §4): stepper, live narrative, and skeletons until done. */
+export function TripGenerationView({ tripId, onRetry, retrying = false }: TripGenerationViewProps) {
+  const stream = useTripStream(tripId);
+  const [slow, setSlow] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSlow(true), SLOW_HINT_AFTER_MS);
+    return () => clearTimeout(timer);
+  }, [tripId]);
+
+  if (stream.phase === 'failed') {
     return (
-      <div role="alert">
-        <p>We couldn&apos;t finish planning this trip. {error}</p>
-        {onRetry ? <button onClick={onRetry}>Try again</button> : null}
-      </div>
+      <ErrorState
+        title="We couldn't finish planning this trip"
+        description={stream.error ?? 'Something went wrong on our side.'}
+        action={
+          <Button onClick={onRetry} disabled={retrying}>
+            <RotateCcw aria-hidden="true" /> Try again
+          </Button>
+        }
+      />
     );
   }
 
   return (
-    <section>
-      <ProgressStepper status={status} />
+    <div className="grid gap-8 lg:grid-cols-[18rem_1fr]">
+      <Card className="h-fit space-y-6 p-6">
+        <RouteTrace loop className="opacity-90" />
+        <ProgressStepper step={stream.step} done={stream.phase === 'complete'} />
+        {slow && (
+          <p className="text-muted-foreground text-xs">
+            Still working. Great itineraries can take a minute or two.
+          </p>
+        )}
+      </Card>
 
-      {/* Streaming narrative: word-by-word reveal, announced politely. */}
-      <p aria-live="polite" className="mt-4 whitespace-pre-wrap">
-        {narrative}
-      </p>
+      <div className="space-y-6">
+        <Card className="space-y-3 p-6">
+          <h2 className="text-muted-foreground text-sm font-medium uppercase tracking-wider">
+            From your guide
+          </h2>
+          <StreamingNarrative text={stream.narrative} />
+        </Card>
 
-      {/* Skeletons for itinerary/map until the final structured render. */}
-      {status === 'complete' && trip ? (
-        <div className="mt-4">{trip.title}</div>
-      ) : (
-        <div className="mt-4">
-          <Skeleton />
+        <div className="space-y-3" role="status" aria-label="Preparing your itinerary">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
         </div>
-      )}
-    </section>
+      </div>
+    </div>
   );
 }
