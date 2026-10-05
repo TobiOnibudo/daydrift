@@ -1,6 +1,6 @@
 import type { TravelMode } from './types';
 
-// Deep links that hand a trip to the maps app people actually navigate with. They are plain URLs,
+// Deep links that hand a trip to Google Maps, where people actually navigate. They are plain URLs,
 // so they open the native app on phones and the web app on desktop, with no API keys.
 
 export interface MapPoint {
@@ -15,9 +15,6 @@ const GOOGLE_MODE: Record<TravelMode, string> = {
   cycling: 'bicycling',
   driving: 'driving',
 };
-
-// Apple's URL scheme has walking and driving flags only; cycling opens with the app's default.
-const APPLE_MODE: Partial<Record<TravelMode, string>> = { walking: 'w', driving: 'd' };
 
 // Google Maps accepts at most 9 intermediate waypoints in a URL.
 const GOOGLE_MAX_WAYPOINTS = 9;
@@ -39,10 +36,7 @@ export function googleRouteUrl(stops: MapPoint[], mode: TravelMode): string | nu
   return `https://www.google.com/maps/dir/?${params}`;
 }
 
-/**
- * Directions to one stop. Without `from`, the maps app starts from the device's current location,
- * which is what someone standing somewhere in the city wants.
- */
+/** Directions to one stop; with `from` (the previous stop) it is the leg between them. */
 export function googleToStopUrl(stop: MapPoint, mode: TravelMode, from?: MapPoint): string {
   const params = new URLSearchParams({
     api: '1',
@@ -51,25 +45,4 @@ export function googleToStopUrl(stop: MapPoint, mode: TravelMode, from?: MapPoin
   });
   if (from) params.set('origin', coord(from));
   return `https://www.google.com/maps/dir/?${params}`;
-}
-
-/** Apple Maps chains stops with "+to:" in the destination. */
-export function appleRouteUrl(stops: MapPoint[], mode: TravelMode): string | null {
-  const first = stops[0];
-  if (!first || stops.length < 2) return null;
-  const flag = APPLE_MODE[mode];
-  return (
-    `https://maps.apple.com/?saddr=${coord(first)}` +
-    `&daddr=${stops.slice(1).map(coord).join('+to:')}` +
-    (flag ? `&dirflg=${flag}` : '')
-  );
-}
-
-export function appleToStopUrl(stop: MapPoint, mode: TravelMode, from?: MapPoint): string {
-  const flag = APPLE_MODE[mode];
-  return (
-    `https://maps.apple.com/?daddr=${coord(stop)}` +
-    (from ? `&saddr=${coord(from)}` : '') +
-    (flag ? `&dirflg=${flag}` : '')
-  );
 }

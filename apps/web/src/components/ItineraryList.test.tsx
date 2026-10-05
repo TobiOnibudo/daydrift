@@ -98,44 +98,34 @@ describe('ItineraryList', () => {
   });
 
   describe('directions for the selected stop', () => {
-    const hrefs = () =>
-      screen
-        .getAllByRole('link')
-        .map((a) => ({ name: a.textContent, href: a.getAttribute('href') }));
-
-    it('shows nothing until a stop is selected', () => {
+    it('shows no links until a stop is selected', () => {
       setup();
       expect(screen.queryAllByRole('link')).toHaveLength(0);
     });
 
-    it('offers Google and Apple Maps from the current location, in a new tab', () => {
+    it('offers one Google Maps link for the first stop, in a new tab, with no start point', () => {
       setup({ activeId: 'a' });
       const links = screen.getAllByRole('link');
-      expect(links).toHaveLength(2);
-      expect(links[0]?.getAttribute('href')).toContain('google.com/maps/dir/');
-      expect(links[0]?.getAttribute('href')).toContain('destination=43.66%2C-79.39');
-      expect(links[0]?.getAttribute('href')).not.toContain('origin=');
-      expect(links[1]?.getAttribute('href')).toContain('maps.apple.com');
-      for (const link of links) {
-        expect(link).toHaveAttribute('target', '_blank');
-        expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
-        expect(link.textContent).toMatch(/opens in a new tab/);
-      }
+      expect(links).toHaveLength(1);
+      const href = new URL(links[0]?.getAttribute('href') as string);
+      expect(href.hostname).toBe('www.google.com');
+      expect(href.searchParams.get('destination')).toBe('43.66,-79.39');
+      expect(href.searchParams.has('origin')).toBe(false);
+      expect(links[0]).toHaveAttribute('target', '_blank');
+      expect(links[0]).toHaveAttribute('rel', expect.stringContaining('noopener'));
+      expect(links[0]?.textContent).toMatch(/opens in a new tab/);
     });
 
-    it('also offers directions from the previous stop for later stops', () => {
+    it('starts later stops from the previous one', () => {
       setup({ activeId: 'b' });
-      expect(hrefs()).toHaveLength(4);
-      const fromPrevious = screen.getAllByRole('link')[2];
-      expect(fromPrevious?.getAttribute('href')).toContain('origin=43.66%2C-79.39');
-      expect(screen.getByText('From stop 1')).toBeInTheDocument();
+      const href = new URL(screen.getByRole('link').getAttribute('href') as string);
+      expect(href.searchParams.get('origin')).toBe('43.66,-79.39');
+      expect(href.searchParams.get('destination')).toBe('43.64,-79.46');
     });
 
     it('uses the trip travel mode', () => {
       setup({ activeId: 'a', travelMode: 'cycling' });
-      expect(screen.getAllByRole('link')[0]?.getAttribute('href')).toContain(
-        'travelmode=bicycling',
-      );
+      expect(screen.getByRole('link').getAttribute('href')).toContain('travelmode=bicycling');
     });
   });
 });

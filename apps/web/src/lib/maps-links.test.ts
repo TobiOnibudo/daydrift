@@ -1,12 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  appleRouteUrl,
-  appleToStopUrl,
-  googleRouteUrl,
-  googleToStopUrl,
-  type MapPoint,
-} from './maps-links';
+import { googleRouteUrl, googleToStopUrl, type MapPoint } from './maps-links';
 
 const a: MapPoint = { lat: 43.6677, lng: -79.3948 };
 const b: MapPoint = { lat: 43.6536, lng: -79.3925 };
@@ -52,7 +46,7 @@ describe('Google Maps links', () => {
     expect(googleRouteUrl([a], 'walking')).toBeNull();
   });
 
-  it('gives directions to a stop from the current location, or from the previous stop', () => {
+  it('gives directions to a stop, or the leg from the previous stop', () => {
     const here = new URL(googleToStopUrl(b, 'cycling'));
     expect(here.searchParams.get('destination')).toBe('43.6536,-79.3925');
     expect(here.searchParams.has('origin')).toBe(false);
@@ -60,32 +54,5 @@ describe('Google Maps links', () => {
 
     const leg = new URL(googleToStopUrl(b, 'walking', a));
     expect(leg.searchParams.get('origin')).toBe('43.6677,-79.3948');
-  });
-});
-
-describe('Apple Maps links', () => {
-  it('chains the remaining stops with +to: after the start', () => {
-    const url = appleRouteUrl([a, b, c], 'walking') as string;
-    expect(url).toBe(
-      'https://maps.apple.com/?saddr=43.6677,-79.3948&daddr=43.6536,-79.3925+to:43.6426,-79.3871&dirflg=w',
-    );
-  });
-
-  it('uses the driving flag, and leaves the mode out for cycling (unsupported)', () => {
-    expect(appleRouteUrl([a, b], 'driving')).toContain('&dirflg=d');
-    expect(appleRouteUrl([a, b], 'cycling')).not.toContain('dirflg');
-  });
-
-  it('has nothing to open for fewer than two stops', () => {
-    expect(appleRouteUrl([a], 'walking')).toBeNull();
-  });
-
-  it('gives directions to a stop, from the current location unless a start is given', () => {
-    expect(appleToStopUrl(b, 'walking')).toBe(
-      'https://maps.apple.com/?daddr=43.6536,-79.3925&dirflg=w',
-    );
-    expect(appleToStopUrl(b, 'driving', a)).toBe(
-      'https://maps.apple.com/?daddr=43.6536,-79.3925&saddr=43.6677,-79.3948&dirflg=d',
-    );
   });
 });

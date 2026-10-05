@@ -1,8 +1,8 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Navigation } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { useEffect } from 'react';
 
-import { appleToStopUrl, googleToStopUrl } from '../lib/maps-links';
+import { googleToStopUrl } from '../lib/maps-links';
 import type { TravelMode, TripLeg } from '../lib/types';
 import { cn } from '../lib/utils';
 
@@ -24,27 +24,10 @@ const item = {
 
 export const stopElementId = (placeId: string) => `stop-${placeId}`;
 
-const linkClass =
-  'inline-flex items-center gap-1 rounded-md border border-input bg-card px-2.5 py-1 text-xs font-medium transition-colors hover:bg-accent';
-
-function NavLinks({ label, google, apple }: { label: string; google: string; apple: string }) {
-  return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      <span className="text-muted-foreground text-xs">{label}</span>
-      <a href={google} target="_blank" rel="noopener noreferrer" className={linkClass}>
-        Google Maps<span className="sr-only"> (opens in a new tab)</span>
-      </a>
-      <a href={apple} target="_blank" rel="noopener noreferrer" className={linkClass}>
-        Apple Maps<span className="sr-only"> (opens in a new tab)</span>
-      </a>
-    </div>
-  );
-}
-
 /**
  * The itinerary as a timeline on the signature route line. Each stop is a button linked to its
  * marker on the map: activate it to fly there, hover or focus it to highlight the marker. The
- * selected stop expands with directions in Google or Apple Maps.
+ * selected stop expands with a Google Maps link for getting there.
  */
 export function ItineraryList({
   legs,
@@ -77,11 +60,11 @@ export function ItineraryList({
         const highlighted = active || leg.placeId === hoveredId;
         const previous = legs[index - 1];
         return (
-          <motion.li key={leg.placeId} variants={item} className="relative pb-6 last:pb-0">
+          <motion.li key={leg.placeId} variants={item} className="relative pb-1 last:pb-0">
             {index < legs.length - 1 && (
               <motion.span
                 aria-hidden="true"
-                className="route-line-v absolute left-[13px] top-8 h-[calc(100%-2rem)] origin-top"
+                className="route-line-v absolute bottom-0 left-[21px] top-10 origin-top"
                 initial={{ scaleY: 0 }}
                 animate={{ scaleY: 1 }}
                 transition={{ delay: 0.25 + index * 0.09, duration: 0.5, ease: 'easeOut' }}
@@ -98,9 +81,9 @@ export function ItineraryList({
               onFocus={() => onHover?.(leg.placeId)}
               onBlur={() => onHover?.(null)}
               className={cn(
-                'group -m-2 flex w-[calc(100%+1rem)] gap-4 rounded-lg p-2 text-left transition-all duration-200',
+                'group flex w-full gap-4 rounded-xl p-2 text-left transition-colors duration-200',
                 active
-                  ? 'bg-accent shadow-soft'
+                  ? 'bg-accent ring-primary/25 ring-1 ring-inset'
                   : highlighted
                     ? 'bg-accent/60'
                     : 'hover:bg-accent/40',
@@ -133,25 +116,18 @@ export function ItineraryList({
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={reduceMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
                   transition={{ duration: 0.25, ease: 'easeOut' }}
-                  className="overflow-hidden pl-11"
+                  className="overflow-hidden pl-[3.25rem]"
                 >
-                  <div className="space-y-2 pt-3">
-                    <p className="text-secondary flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider">
-                      <Navigation className="h-3.5 w-3.5" aria-hidden="true" /> Get there
-                    </p>
-                    <NavLinks
-                      label="From where you are"
-                      google={googleToStopUrl(leg, travelMode)}
-                      apple={appleToStopUrl(leg, travelMode)}
-                    />
-                    {previous && (
-                      <NavLinks
-                        label={`From stop ${previous.order}`}
-                        google={googleToStopUrl(leg, travelMode, previous)}
-                        apple={appleToStopUrl(leg, travelMode, previous)}
-                      />
-                    )}
-                  </div>
+                  <a
+                    href={googleToStopUrl(leg, travelMode, previous)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="border-input bg-card hover:bg-accent my-2 inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors"
+                  >
+                    Directions in Google Maps
+                    <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span className="sr-only"> (opens in a new tab)</span>
+                  </a>
                 </motion.div>
               )}
             </AnimatePresence>

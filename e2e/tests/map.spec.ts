@@ -73,38 +73,39 @@ test.describe('itinerary and map are linked', () => {
     await expect(marker(page, 2).locator('span.is-active')).toBeVisible();
     // The selected stop's directions come next in the tab order, before the following stop.
     await page.keyboard.press('Tab');
-    await expect(
-      page.getByRole('link', { name: /^Google Maps.*opens in a new tab/ }).first(),
-    ).toBeFocused();
-    for (let i = 0; i < 4; i++) await page.keyboard.press('Tab');
+    await expect(page.getByRole('link', { name: /^Directions in Google Maps/ })).toBeFocused();
+    await page.keyboard.press('Tab');
     await expect(stop(page, 3)).toBeFocused();
   });
 
-  test('hands the trip to Google and Apple Maps, for the whole route and per stop', async ({
+  test('opens the route in Google Maps, and each selected stop as a leg from the previous one', async ({
     page,
   }) => {
-    const google = page.getByRole('link', { name: /^Google Maps/ }).first();
-    const apple = page.getByRole('link', { name: /^Apple Maps/ }).first();
-    for (const link of [google, apple]) {
-      await expect(link).toHaveAttribute('target', '_blank');
-      await expect(link).toHaveAttribute('rel', /noopener/);
-    }
-    const whole = new URL((await google.getAttribute('href')) as string);
+    // Only Google Maps is offered, and nothing else is linked until a stop is selected.
+    await expect(page.getByRole('link', { name: /apple/i })).toHaveCount(0);
+    const route = page.getByRole('link', { name: /^Open the route in Google Maps/ });
+    await expect(route).toHaveAttribute('target', '_blank');
+    await expect(route).toHaveAttribute('rel', /noopener/);
+    const whole = new URL((await route.getAttribute('href')) as string);
     expect(whole.hostname).toBe('www.google.com');
     expect(whole.searchParams.get('travelmode')).toBe('walking');
     expect(whole.searchParams.get('origin')).toMatch(/^-?[0-9]+[.][0-9]+,-?[0-9]+[.][0-9]+$/);
     expect(whole.searchParams.get('waypoints')).toBeTruthy(); // three stops: one waypoint between
-    expect(await apple.getAttribute('href')).toContain('maps.apple.com/?saddr=');
-    expect(await apple.getAttribute('href')).toContain('+to:');
 
-    // Selecting a stop reveals directions for just that stop.
-    await expect(page.getByText('Get there')).toHaveCount(0);
+    const directions = page.getByRole('link', { name: /^Directions in Google Maps/ });
+    await expect(directions).toHaveCount(0);
+
+    // The first stop has no previous stop, so Google starts from the device location.
+    await stop(page, 1).click();
+    const first = new URL((await directions.getAttribute('href')) as string);
+    expect(first.searchParams.has('destination')).toBe(true);
+    expect(first.searchParams.has('origin')).toBe(false);
+
+    // Later stops are the leg from the stop before.
     await stop(page, 3).click();
-    await expect(page.getByText('Get there')).toBeVisible();
-    const here = page.getByRole('link', { name: /^Google Maps.*opens in a new tab/ }).first();
-    const dest = new URL((await here.getAttribute('href')) as string);
-    expect(dest.searchParams.has('destination')).toBe(true);
-    expect(dest.searchParams.has('origin')).toBe(false); // starts from where you are
-    await expect(page.getByText('From stop 2')).toBeVisible();
+    await expect(directions).toHaveCount(1);
+    const leg = new URL((await directions.getAttribute('href')) as string);
+    expect(leg.searchParams.get('origin')).toMatch(/,/);
+    expect(leg.searchParams.get('origin')).not.toBe(leg.searchParams.get('destination'));
   });
 });

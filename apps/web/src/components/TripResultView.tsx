@@ -1,7 +1,7 @@
 import { Bike, Car, ExternalLink, Footprints, Route } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 
-import { appleRouteUrl, googleRouteUrl } from '../lib/maps-links';
+import { googleRouteUrl } from '../lib/maps-links';
 import type { SharedApiTrip } from '../lib/types';
 
 import { ItineraryList } from './ItineraryList';
@@ -42,7 +42,6 @@ export function TripResultView({ trip, actions, back }: TripResultViewProps) {
   const { label, Icon } = MODE[trip.travelMode];
   const hasRoute = trip.routeGeojson !== null && trip.routeGeojson !== undefined;
   const googleUrl = googleRouteUrl(trip.legs, trip.travelMode);
-  const appleUrl = appleRouteUrl(trip.legs, trip.travelMode);
 
   // One selection shared by the list and the map, so each drives the other.
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -77,15 +76,12 @@ export function TripResultView({ trip, actions, back }: TripResultViewProps) {
           ))}
         </div>
 
-        {googleUrl && appleUrl && (
+        {googleUrl && (
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-muted-foreground text-sm">Take it with you:</span>
             <a href={googleUrl} target="_blank" rel="noopener noreferrer" className={navLink}>
-              Google Maps <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-              <span className="sr-only">(opens the full route in a new tab)</span>
-            </a>
-            <a href={appleUrl} target="_blank" rel="noopener noreferrer" className={navLink}>
-              Apple Maps <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+              Open the route in Google Maps{' '}
+              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
               <span className="sr-only">(opens the full route in a new tab)</span>
             </a>
           </div>
@@ -106,7 +102,7 @@ export function TripResultView({ trip, actions, back }: TripResultViewProps) {
         />
       </div>
 
-      <div className="min-h-0 lg:col-start-1 lg:row-start-2 lg:overflow-y-auto lg:overscroll-contain lg:py-2 lg:pr-3">
+      <div className="min-h-0 lg:col-start-1 lg:row-start-2 lg:overflow-y-auto lg:overscroll-contain lg:px-1 lg:py-2 lg:pr-3">
         <ItineraryList
           legs={trip.legs}
           travelMode={trip.travelMode}
