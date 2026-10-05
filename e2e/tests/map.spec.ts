@@ -71,9 +71,14 @@ test.describe('itinerary and map are linked', () => {
     await expect(marker(page, 2).locator('span.is-hover')).toBeVisible();
     await page.keyboard.press('Enter');
     await expect(marker(page, 2).locator('span.is-active')).toBeVisible();
-    // The selected stop's directions come next in the tab order, before the following stop.
+    // The selected stop's directions come next in the tab order.
     await page.keyboard.press('Tab');
     await expect(page.getByRole('link', { name: /^Directions in Google Maps/ })).toBeFocused();
+    // Then its edit controls (move up and down, swap, remove), then the following stop.
+    for (const name of [/^Move .* up$/, /^Move .* down$/, /^Swap /, /^Remove /]) {
+      await page.keyboard.press('Tab');
+      await expect(page.getByRole('button', { name })).toBeFocused();
+    }
     await page.keyboard.press('Tab');
     await expect(stop(page, 3)).toBeFocused();
   });
