@@ -1,9 +1,8 @@
+import { db, places } from '@daydrift/db';
 import { createEmbedPlaceQueue } from '@daydrift/queue';
 
-import { db } from './client.js';
-import { places } from './schema.js';
-import { mapOverpassToPlace } from './seeding/mapping.js';
-import { fetchPlacesFromOverpass, type BoundingBox } from './seeding/overpass.js';
+import { mapOverpassToPlace } from './mapping.js';
+import { fetchPlacesFromOverpass, type BoundingBox } from './overpass.js';
 
 export interface CityDefinition {
   name: string;
@@ -51,24 +50,3 @@ export async function seedCity(city: CityDefinition): Promise<number> {
 
   return inserted.length;
 }
-
-// CLI entry point
-const TORONTO: CityDefinition = {
-  name: 'Toronto',
-  bbox: {
-    south: 43.6,
-    west: -79.45,
-    north: 43.7,
-    east: -79.35,
-  },
-};
-
-seedCity(TORONTO)
-  .then((count) => {
-    console.log(`[seed] Seeded ${count} places for Toronto`);
-    process.exit(0);
-  })
-  .catch((err) => {
-    console.error('[seed] Error:', err);
-    process.exit(1);
-  });

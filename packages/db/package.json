@@ -19,19 +19,15 @@
     "test": "echo \"no tests yet\"",
     "migrate": "drizzle-kit migrate",
     "generate": "drizzle-kit generate",
-    "studio": "drizzle-kit studio",
-    "seed": "tsx src/seed.ts"
+    "studio": "drizzle-kit studio"
   },
   "dependencies": {
     "drizzle-orm": "^0.33.0",
     "postgres": "^3.4.0",
     "@daydrift/config": "workspace:*",
-    "@daydrift/types": "workspace:*",
-    "@daydrift/queue": "workspace:*",
-    "@daydrift/ai": "workspace:*"
+    "@daydrift/types": "workspace:*"
   },
   "devDependencies": {
-    "drizzle-kit": "^0.24.0",
-    "tsx": "^4.7.0"
+    "drizzle-kit": "^0.24.0"
   }
 }

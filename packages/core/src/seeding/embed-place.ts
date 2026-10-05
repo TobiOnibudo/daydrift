@@ -1,10 +1,9 @@
 import { eq } from 'drizzle-orm';
 
 import { embed } from '@daydrift/ai';
+import { db, places } from '@daydrift/db';
 import type { EmbedPlaceJobData } from '@daydrift/queue';
 
-import { db } from '../client.js';
-import { places } from '../schema.js';
 
 export async function embedPlaceProcessor(job: {
   data: EmbedPlaceJobData;

@@ -6,3 +6,5 @@ export * from './itinerary.js';
 export * from './osrm.js';
 export * from './prompt.js';
 export * from './schemas.js';
+export * from './seeding/seed-city.js';
+export * from './seeding/embed-place.js';

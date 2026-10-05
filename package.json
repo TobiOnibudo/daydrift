@@ -15,7 +15,7 @@
     "db:migrate": "pnpm --filter @daydrift/db migrate",
     "db:generate": "pnpm --filter @daydrift/db generate",
     "db:studio": "pnpm --filter @daydrift/db studio",
-    "seed": "pnpm --filter @daydrift/db seed",
+    "seed": "pnpm --filter @daydrift/core seed",
     "clean": "turbo run clean && rimraf node_modules",
     "prepare": "husky"
   },

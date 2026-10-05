@@ -233,6 +233,9 @@ importers:
       '@daydrift/db':
         specifier: workspace:*
         version: link:../db
+      '@daydrift/queue':
+        specifier: workspace:*
+        version: link:../queue
       '@daydrift/types':
         specifier: workspace:*
         version: link:../types
@@ -249,21 +252,18 @@ importers:
       '@types/geojson':
         specifier: ^7946.0.14
         version: 7946.0.16
+      tsx:
+        specifier: ^4.7.0
+        version: 4.23.15
       vitest:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@20.19.43)
 
   packages/db:
     dependencies:
-      '@daydrift/ai':
-        specifier: workspace:*
-        version: link:../ai
       '@daydrift/config':
         specifier: workspace:*
         version: link:../config
-      '@daydrift/queue':
-        specifier: workspace:*
-        version: link:../queue
       '@daydrift/types':
         specifier: workspace:*
         version: link:../types
@@ -277,9 +277,6 @@ importers:
       drizzle-kit:
         specifier: ^0.24.0
         version: 0.24.2
-      tsx:
-        specifier: ^4.7.0
-        version: 4.23.15
 
   packages/queue:
     dependencies:

@@ -4,7 +4,7 @@
 
 **What it does / exports:** `db` (Drizzle client) and the schema tables (`places`, `trips`, plus a minimal `user` stub). See docs/02-data-model.md.
 
-**How to run:** `pnpm --filter @daydrift/db generate` (author migrations), `migrate` (apply), `studio` (Drizzle Studio), `seed` (sample data). Not a long-running service.
+**How to run:** `pnpm --filter @daydrift/db generate` (author migrations), `migrate` (apply), `studio` (Drizzle Studio), Not a long-running service.
 
 **Dependencies:** `@daydrift/config` (connection string + `EMBEDDING_DIM`), `@daydrift/types`. External: `drizzle-orm`, `postgres`; dev: `drizzle-kit`, `tsx`.
 

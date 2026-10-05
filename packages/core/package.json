@@ -16,7 +16,8 @@
     "typecheck": "tsc --noEmit",
     "clean": "rimraf dist",
     "lint": "eslint src",
-    "test": "vitest run"
+    "test": "vitest run",
+    "seed": "tsx src/seeding/cli.ts"
   },
   "dependencies": {
     "@daydrift/db": "workspace:*",
@@ -25,10 +26,12 @@
     "@daydrift/config": "workspace:*",
     "ioredis": "^5.4.0",
     "drizzle-orm": "^0.33.0",
-    "zod": "^3.23.0"
+    "zod": "^3.23.0",
+    "@daydrift/queue": "workspace:*"
   },
   "devDependencies": {
     "vitest": "^2.1.0",
-    "@types/geojson": "^7946.0.14"
+    "@types/geojson": "^7946.0.14",
+    "tsx": "^4.7.0"
   }
 }
