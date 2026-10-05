@@ -1,4 +1,3 @@
-import { Terrain } from '@lucasmarkes/hairline/react';
 import { RotateCcw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -6,6 +5,7 @@ import { useTripStream } from '../hooks/useTripStream';
 
 import { ProgressStepper } from './ProgressStepper';
 import { StreamingNarrative } from './StreamingNarrative';
+import { RouteTrace } from './route/RouteTrace';
 import { ErrorState } from './states';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -65,12 +65,7 @@ export function TripGenerationView({
   return (
     <div className="grid gap-8 lg:grid-cols-[18rem_1fr]">
       <Card className="h-fit space-y-6 p-6">
-        {/* A little city of pillars on a plinth that rise around the pointer: the place taking shape. */}
-        <Terrain
-          className="hairline-themed mx-auto w-full max-w-[16rem]"
-          label={revising ? 'A city map, reshaping around your changes' : 'A city map taking shape'}
-          intensity={0.6}
-        />
+        <RouteTrace loop traveler className="opacity-90" />
         <ProgressStepper step={stream.step} done={stream.phase === 'complete'} />
         {slow && (
           <p className="text-muted-foreground text-xs">
