@@ -1,3 +1,4 @@
+import { config } from '@daydrift/config';
 import {
   embed as aiEmbed,
   generateObject as aiGenerateObject,
@@ -11,6 +12,13 @@ import { getEmbeddingModel, getLanguageModel } from './provider.js';
 // touches a provider SDK directly. Used by the RAG pipeline in
 // `packages/core`. See docs/03-rag-pipeline.md (embed query → generate → stream).
 
+/** Bound every generation call: a hung local model must fail fast so the caller can fall back. */
+const EMBED_TIMEOUT_MS = 30_000;
+const llmLimits = () => ({
+  abortSignal: AbortSignal.timeout(config.llm.timeoutMs),
+  maxRetries: 1,
+});
+
 export { getEmbeddingModel, getLanguageModel } from './provider.js';
 
 /** Embed a single string with the configured embedding model. */
@@ -18,6 +26,7 @@ export async function embed(text: string): Promise<number[]> {
   const { embedding } = await aiEmbed({
     model: getEmbeddingModel(),
     value: text,
+    abortSignal: AbortSignal.timeout(EMBED_TIMEOUT_MS),
   });
   return embedding;
 }
@@ -35,6 +44,7 @@ export async function generateObject<T>(opts: GenerateObjectOptions<T>) {
     schema: opts.schema,
     prompt: opts.prompt,
     system: opts.system,
+    ...llmLimits(),
   });
 }
 
@@ -49,5 +59,6 @@ export function streamText(opts: StreamTextOptions) {
     model: getLanguageModel(),
     prompt: opts.prompt,
     system: opts.system,
+    ...llmLimits(),
   });
 }

@@ -60,6 +60,7 @@ const envSchema = z.object({
   LLM_MODEL: z.string().optional(),
   LLM_BASE_URL: z.string().optional(),
   LLM_API_KEY: z.string().optional(),
+  LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(90_000),
 
   OPENAI_API_KEY: z.string().optional(),
 
@@ -157,6 +158,7 @@ export const config = Object.freeze({
     model: env.LLM_MODEL,
     baseUrl: env.LLM_BASE_URL,
     apiKey: env.LLM_API_KEY,
+    timeoutMs: env.LLM_TIMEOUT_MS,
   },
   openaiApiKey: env.OPENAI_API_KEY,
   embedding: {
