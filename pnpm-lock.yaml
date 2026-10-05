@@ -74,12 +74,18 @@ importers:
       '@fastify/static':
         specifier: ^7.0.0
         version: 7.0.4
+      bullmq:
+        specifier: ^5.0.0
+        version: 5.81.5
       fastify:
         specifier: ^4.28.0
         version: 4.29.1
       ioredis:
         specifier: ^5.4.0
         version: 5.11.1
+      zod:
+        specifier: ^3.23.0
+        version: 3.25.76
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
@@ -87,6 +93,9 @@ importers:
       tsx:
         specifier: ^4.7.0
         version: 4.23.15
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@20.19.43)
 
   apps/web:
     dependencies:

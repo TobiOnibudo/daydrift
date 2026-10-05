@@ -1,0 +1,208 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const getSession = vi.fn();
+vi.mock('@daydrift/auth', () => ({
+  auth: { api: { getSession }, handler: vi.fn() },
+  fromNodeHeaders: (h: unknown) => h,
+}));
+
+const core = {
+  getCachedTripResult: vi.fn(),
+  insertTrip: vi.fn(),
+  failTrip: vi.fn(),
+  getTrip: vi.fn(),
+  resetTrip: vi.fn(),
+  checkDependencies: vi.fn(),
+};
+vi.mock('@daydrift/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@daydrift/core')>()),
+  ...core,
+}));
+
+const { buildApp } = await import('../app.js');
+
+const queue = { add: vi.fn(), close: vi.fn(async () => undefined) };
+const TRIP_ID = '7d4b8a3e-7c43-4f6f-9d1b-1f2b7a9c0e11';
+const body = {
+  city: ' Toronto ',
+  interests: ['Art', 'coffee', 'art'],
+  duration: 'half-day',
+  travelMode: 'walking',
+};
+
+let app: Awaited<ReturnType<typeof buildApp>>;
+
+beforeEach(async () => {
+  vi.clearAllMocks();
+  queue.add.mockReset().mockResolvedValue(undefined);
+  getSession.mockResolvedValue({ user: { id: 'u1' } });
+  core.getCachedTripResult.mockResolvedValue(null);
+  core.insertTrip.mockImplementation(async (a: { result?: unknown }) => ({
+    id: TRIP_ID,
+    status: a.result ? 'complete' : 'pending',
+  }));
+  app = await buildApp({ aiPlanQueue: queue, logger: false });
+});
+
+afterEach(() => app.close());
+
+const post = (url: string, payload?: unknown) =>
+  app.inject({ method: 'POST', url, payload: payload as object });
+
+describe('POST /api/v1/trips', () => {
+  it('rejects unauthenticated requests with the UNAUTHORIZED envelope', async () => {
+    getSession.mockResolvedValue(null);
+    const res = await post('/api/v1/trips', body);
+    expect(res.statusCode).toBe(401);
+    expect(res.json()).toEqual({
+      error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+    });
+  });
+
+  it('rejects invalid input with VALIDATION_ERROR and field details', async () => {
+    const res = await post('/api/v1/trips', { ...body, duration: 'forever' });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.code).toBe('VALIDATION_ERROR');
+    expect(res.json().error.details.fieldErrors.duration).toBeDefined();
+  });
+
+  it('creates a pending trip from normalized input and enqueues one job on a cache miss', async () => {
+    const res = await post('/api/v1/trips', body);
+
+    expect(res.statusCode).toBe(201);
+    expect(res.json()).toEqual({ tripId: TRIP_ID, status: 'pending' });
+    const inserted = core.insertTrip.mock.calls[0]![0];
+    expect(inserted.userId).toBe('u1');
+    expect(inserted.input).toEqual({
+      city: 'toronto',
+      interests: ['art', 'coffee'],
+      duration: 'half-day',
+      travelMode: 'walking',
+    });
+    expect(inserted.inputHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(queue.add).toHaveBeenCalledWith(
+      'ai-plan',
+      { tripId: TRIP_ID, input: inserted.input },
+      { jobId: TRIP_ID },
+    );
+  });
+
+  it('returns a complete trip straight from the result cache without enqueueing', async () => {
+    const cached = {
+      title: 'Cached',
+      legs: [],
+      routeGeojson: null,
+      totalDistanceKm: 1,
+      vibeTags: [],
+    };
+    core.getCachedTripResult.mockResolvedValue(cached);
+
+    const res = await post('/api/v1/trips', body);
+
+    expect(res.json()).toEqual({ tripId: TRIP_ID, status: 'complete' });
+    expect(core.insertTrip.mock.calls[0]![0].result).toEqual(cached);
+    expect(queue.add).not.toHaveBeenCalled();
+  });
+
+  it('falls back to generation when the cache is unavailable', async () => {
+    core.getCachedTripResult.mockRejectedValue(new Error('redis down'));
+    const res = await post('/api/v1/trips', body);
+    expect(res.statusCode).toBe(201);
+    expect(queue.add).toHaveBeenCalledOnce();
+  });
+
+  it('marks the trip failed and returns 503 if enqueueing fails', async () => {
+    queue.add.mockRejectedValue(new Error('redis down'));
+    const res = await post('/api/v1/trips', body);
+
+    expect(res.statusCode).toBe(503);
+    expect(res.json().error.code).toBe('SERVICE_UNAVAILABLE');
+    expect(core.failTrip).toHaveBeenCalledWith(TRIP_ID);
+  });
+});
+
+describe('trip resources', () => {
+  it('returns NOT_FOUND for a trip the caller does not own', async () => {
+    core.getTrip.mockResolvedValue(null);
+    const res = await app.inject({ method: 'GET', url: `/api/v1/trips/${TRIP_ID}` });
+    expect(res.statusCode).toBe(404);
+    expect(res.json().error.code).toBe('NOT_FOUND');
+    expect(core.getTrip).toHaveBeenCalledWith(TRIP_ID, 'u1');
+  });
+
+  it('validates the id parameter', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/v1/trips/not-a-uuid' });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('refuses to regenerate a trip that is still generating', async () => {
+    core.getTrip.mockResolvedValue({ id: TRIP_ID, status: 'processing' });
+    const res = await post(`/api/v1/trips/${TRIP_ID}/regenerate`);
+    expect(res.statusCode).toBe(409);
+    expect(core.resetTrip).not.toHaveBeenCalled();
+  });
+
+  it('resets and re-enqueues a finished trip with a fresh job id', async () => {
+    const stored = {
+      id: TRIP_ID,
+      status: 'complete',
+      city: 'toronto',
+      interests: ['art'],
+      duration: 'half-day',
+      travelMode: 'walking',
+    };
+    core.getTrip.mockResolvedValue(stored);
+    core.resetTrip.mockResolvedValue({ ...stored, status: 'pending' });
+
+    const res = await post(`/api/v1/trips/${TRIP_ID}/regenerate`);
+
+    expect(res.statusCode).toBe(202);
+    const [, data, opts] = queue.add.mock.calls[0]!;
+    expect(data).toEqual({
+      tripId: TRIP_ID,
+      input: { city: 'toronto', interests: ['art'], duration: 'half-day', travelMode: 'walking' },
+    });
+    expect(opts.jobId).toMatch(new RegExp(`^${TRIP_ID}-\\d+$`));
+  });
+});
+
+describe('places and platform routes', () => {
+  it('rejects an unknown place category', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/v1/places?category=spaceport' });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('requires auth for seeding and semantic search', async () => {
+    getSession.mockResolvedValue(null);
+    expect((await post('/api/v1/places/seed', { city: 'toronto' })).statusCode).toBe(401);
+    expect(
+      (await post('/api/v1/places/search/semantic', { query: 'x', city: 'toronto' })).statusCode,
+    ).toBe(401);
+  });
+
+  it('reports readiness from the dependency checks', async () => {
+    core.checkDependencies.mockResolvedValue({ database: true, redis: true });
+    expect((await app.inject({ method: 'GET', url: '/health/ready' })).statusCode).toBe(200);
+
+    core.checkDependencies.mockResolvedValue({ database: true, redis: false });
+    const down = await app.inject({ method: 'GET', url: '/health/ready' });
+    expect(down.statusCode).toBe(503);
+    expect(down.json().error).toMatchObject({
+      code: 'SERVICE_UNAVAILABLE',
+      details: { redis: false },
+    });
+  });
+
+  it('answers liveness without touching dependencies', async () => {
+    const res = await app.inject({ method: 'GET', url: '/health' });
+    expect(res.json()).toEqual({ status: 'ok' });
+    expect(core.checkDependencies).not.toHaveBeenCalled();
+  });
+
+  it('returns the envelope for unknown routes', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/v1/nope' });
+    expect(res.statusCode).toBe(404);
+    expect(res.json().error.code).toBe('NOT_FOUND');
+  });
+});
