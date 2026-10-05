@@ -1,13 +1,10 @@
-import { embed } from '@daydrift/ai';
-import type { Place } from '@daydrift/types';
-// `embed` is the entry point for the retrieval pipeline (docs/03 §3).
+import type { CreateTripInput, Place } from '@daydrift/types';
+import { db, places } from '@daydrift/db';
+import { and, eq, isNotNull } from 'drizzle-orm';
 
-export interface SearchCandidatesInput {
-  city: string;
-  interests: string[];
-  duration: string;
-  travelMode: string;
-}
+import { buildSearchQuery } from './query-builder.js';
+import { vectorSearch } from './vector-search.js';
+import { getCityPlacePool, setCityPlacePool } from './cache.js';
 
 /**
  * Retrieve + score + diversify candidate places for a trip request.
@@ -22,9 +19,42 @@ export interface SearchCandidatesInput {
  *
  * @returns up to 15 diverse candidate places.
  */
-export async function searchCandidatePlaces(_input: SearchCandidatesInput): Promise<Place[]> {
-  // TODO: implement the pipeline above. `embed` is imported so the dependency
-  // and call site are wired for the real implementation.
-  void embed;
-  return [];
+export async function searchCandidatePlaces(
+  input: CreateTripInput,
+): Promise<Place[]> {
+  const city = input.city.toLowerCase();
+
+  // Check place-pool cache first
+  let pool = await getCityPlacePool(city);
+
+  if (!pool) {
+    // Cache miss: fetch all city places from DB
+    const dbPlaces = await db
+      .select()
+      .from(places)
+      .where(and(eq(places.city, city), isNotNull(places.embedding)))
+
+    pool = dbPlaces.map((r) => ({
+      id: r.id,
+      osmId: r.osmId,
+      name: r.name,
+      city: r.city,
+      category: r.category as Place['category'],
+      description: r.description,
+      lat: r.lat,
+      lng: r.lng,
+      tags: r.tags as Record<string, string>,
+      createdAt: r.createdAt,
+    }));
+
+    await setCityPlacePool(city, pool);
+  }
+
+  // Build semantic search query
+  const query = buildSearchQuery(input);
+
+  // Vector search over pool
+  const results = await vectorSearch(query, city, 50); // Top 50 for scoring
+
+  return results;
 }
