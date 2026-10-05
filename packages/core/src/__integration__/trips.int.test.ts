@@ -6,10 +6,13 @@ import {
   completeTrip,
   deleteTrip,
   failTrip,
+  getSharedTrip,
   getTrip,
   insertTrip,
   listTrips,
   resetTrip,
+  shareTrip,
+  unshareTrip,
 } from '../trips/repository.js';
 
 import { createUser, resetState } from './helpers.js';
@@ -121,5 +124,39 @@ describe('trip repository (real Postgres)', () => {
     const trip = await insertTrip({ userId: alice, input, inputHash: 'h1' });
     expect(await deleteTrip(trip.id, alice)).toBe(true);
     expect(await getTrip(trip.id, alice)).toBeNull();
+  });
+
+  describe('sharing', () => {
+    it('shares only completed trips the caller owns, with a stable token', async () => {
+      const trip = await insertTrip({ userId: alice, input, inputHash: 'h1' });
+      expect(await shareTrip(trip.id, alice)).toBeNull(); // still pending
+
+      await completeTrip(trip.id, result);
+      expect(await shareTrip(trip.id, bob)).toBeNull(); // not the owner
+      const token = await shareTrip(trip.id, alice);
+      expect(token).toMatch(/^[A-Za-z0-9_-]{16,}$/);
+      expect(await shareTrip(trip.id, alice)).toBe(token);
+    });
+
+    it('exposes a public view without the owner or token, until unshared', async () => {
+      const trip = await insertTrip({ userId: alice, input, inputHash: 'h1', result });
+      const token = (await shareTrip(trip.id, alice)) as string;
+
+      const shared = await getSharedTrip(token);
+      expect(shared).toMatchObject({ id: trip.id, title: 'A Day' });
+      expect(shared).not.toHaveProperty('userId');
+      expect(shared).not.toHaveProperty('shareToken');
+
+      expect(await unshareTrip(trip.id, bob)).toBe(false);
+      expect(await unshareTrip(trip.id, alice)).toBe(true);
+      expect(await getSharedTrip(token)).toBeNull();
+    });
+
+    it('hides a shared trip while it is being regenerated', async () => {
+      const trip = await insertTrip({ userId: alice, input, inputHash: 'h1', result });
+      const token = (await shareTrip(trip.id, alice)) as string;
+      await resetTrip(trip.id, alice);
+      expect(await getSharedTrip(token)).toBeNull();
+    });
   });
 });

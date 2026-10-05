@@ -1,3 +1,5 @@
+import { randomBytes } from 'node:crypto';
+
 import { db, trips } from '@daydrift/db';
 import type { CreateTripInput, Duration, Trip, TripResult, TravelMode } from '@daydrift/types';
 import { and, desc, eq, inArray } from 'drizzle-orm';
@@ -18,6 +20,7 @@ export function tripFromRow(row: TripRow): Trip {
     totalDistanceKm: row.totalDistanceKm,
     vibeTags: row.vibeTags ?? [],
     status: row.status,
+    shareToken: row.shareToken,
     createdAt: row.createdAt,
   };
 }
@@ -135,4 +138,42 @@ export async function resetTrip(id: string, userId: string): Promise<Trip | null
     .where(and(eq(trips.id, id), eq(trips.userId, userId)))
     .returning();
   return row ? tripFromRow(row) : null;
+}
+
+/** A trip as exposed through a public share link: no owner, no token. */
+export type SharedTrip = Omit<Trip, 'userId' | 'shareToken'>;
+
+/** Enable sharing for a completed trip, returning its (stable) token. Null if not found or unfinished. */
+export async function shareTrip(id: string, userId: string): Promise<string | null> {
+  const trip = await getTrip(id, userId);
+  if (!trip || trip.status !== 'complete') return null;
+  if (trip.shareToken) return trip.shareToken;
+
+  const token = randomBytes(16).toString('base64url');
+  const [row] = await db
+    .update(trips)
+    .set({ shareToken: token })
+    .where(and(eq(trips.id, id), eq(trips.userId, userId)))
+    .returning({ shareToken: trips.shareToken });
+  return row?.shareToken ?? null;
+}
+
+export async function unshareTrip(id: string, userId: string): Promise<boolean> {
+  const rows = await db
+    .update(trips)
+    .set({ shareToken: null })
+    .where(and(eq(trips.id, id), eq(trips.userId, userId)))
+    .returning({ id: trips.id });
+  return rows.length > 0;
+}
+
+/** Public read by share token; only completed trips are ever exposed. */
+export async function getSharedTrip(token: string): Promise<SharedTrip | null> {
+  const [row] = await db
+    .select()
+    .from(trips)
+    .where(and(eq(trips.shareToken, token), eq(trips.status, 'complete')));
+  if (!row) return null;
+  const { userId: _userId, shareToken: _shareToken, ...shared } = tripFromRow(row);
+  return shared;
 }
