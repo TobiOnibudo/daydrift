@@ -2,6 +2,7 @@ import {
   CITIES,
   findCity,
   getPlace,
+  listCities,
   listPlaces,
   seedCity,
   semanticSearchPlaces,
@@ -27,6 +28,8 @@ const SearchBody = z.object({
 
 export const placeRoutes: FastifyPluginAsync = async (app) => {
   const seeding = new Set<string>();
+
+  app.get('/places/cities', async () => ({ cities: await listCities() }));
 
   app.get('/places', async (request) => ({
     places: await listPlaces(parse(ListQuery, request.query)),

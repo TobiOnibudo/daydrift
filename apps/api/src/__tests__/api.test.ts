@@ -13,6 +13,7 @@ const core = {
   getTrip: vi.fn(),
   resetTrip: vi.fn(),
   checkDependencies: vi.fn(),
+  listCities: vi.fn(),
 };
 vi.mock('@daydrift/core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@daydrift/core')>()),
@@ -171,6 +172,13 @@ describe('places and platform routes', () => {
     const res = await app.inject({ method: 'GET', url: '/api/v1/places?category=spaceport' });
     expect(res.statusCode).toBe(400);
     expect(res.json().error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('lists plannable cities publicly', async () => {
+    core.listCities.mockResolvedValue([{ key: 'toronto', name: 'Toronto', placeCount: 827 }]);
+    const res = await app.inject({ method: 'GET', url: '/api/v1/places/cities' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().cities[0]).toMatchObject({ key: 'toronto', name: 'Toronto' });
   });
 
   it('requires auth for seeding and semantic search', async () => {
