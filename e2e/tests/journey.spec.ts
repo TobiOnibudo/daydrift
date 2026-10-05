@@ -30,12 +30,36 @@ test.describe('authentication', () => {
     await expect(page.getByRole('alert')).toContainText('do not match');
   });
 
-  test('short passwords are rejected before any request is made', async ({ page }) => {
+  test('signing out ends the session for API calls and protected pages', async ({ page }) => {
+    await signUp(page);
+    expect((await page.request.get('/api/v1/trips')).status()).toBe(200);
+
+    await page.getByRole('button', { name: /sign out/i }).click();
+    await expect(page).toHaveURL('/');
+
+    expect((await page.request.get('/api/v1/trips')).status()).toBe(401);
+    await page.goto('/trips');
+    await expect(page).toHaveURL(/\/auth$/);
+  });
+
+  test('a too-short password is rejected on sign-up before any request is made', async ({
+    page,
+  }) => {
+    const authRequests: string[] = [];
+    page.on('request', (r) => r.url().includes('/auth/sign-') && authRequests.push(r.url()));
+
     await page.goto('/auth');
+    await page.getByRole('button', { name: 'Create an account' }).click();
+    await page.getByLabel('Name').fill('Shorty');
     await page.getByLabel('Email').fill(uniqueEmail());
     await page.getByLabel('Password').fill('short');
-    await page.getByRole('button', { name: 'Sign in' }).click();
-    await expect(page.getByRole('alert')).toContainText('at least 8 characters');
+    await page.getByRole('button', { name: 'Create account' }).click();
+
+    await expect(
+      page.getByText('Use at least 8 characters.', { exact: false }).first(),
+    ).toBeVisible();
+    await expect(page.getByLabel('Password')).toBeFocused();
+    expect(authRequests).toEqual([]);
   });
 });
 
