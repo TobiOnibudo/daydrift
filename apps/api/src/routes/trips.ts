@@ -1,3 +1,4 @@
+import { config } from '@daydrift/config';
 import {
   deleteTrip,
   failTrip,
@@ -20,13 +21,19 @@ import { AppError, parse } from '../lib/errors.js';
 import { requireAuth } from '../plugins/auth.js';
 
 const IdParams = z.object({ id: z.string().uuid() });
+// Each uncached trip is an LLM run, so creation is limited far more tightly than reads.
+const CREATE_LIMIT = {
+  max: config.nodeEnv === 'production' ? 20 : 10_000,
+  timeWindow: '15 minutes',
+};
+
 const ListQuery = z.object({ city: z.string().trim().min(1).optional() });
 
 export const tripRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('preHandler', requireAuth);
 
   // Create a trip: serve from the result cache when possible, otherwise enqueue generation.
-  app.post('/trips', async (request, reply) => {
+  app.post('/trips', { config: { rateLimit: CREATE_LIMIT } }, async (request, reply) => {
     const input = normalizeInput(parse(CreateTripInputSchema, request.body));
     const inputHash = hashInput(input);
 

@@ -60,3 +60,50 @@ describe('serving the built SPA', () => {
     await bare.close();
   });
 });
+
+describe('rate limiting', () => {
+  it('counts API requests only, never static assets, the SPA, or health probes', async () => {
+    const limited = await buildApp({
+      aiPlanQueue: queue,
+      logger: false,
+      webDist: false,
+      rateLimit: { max: 2, timeWindow: '1 minute' },
+    });
+
+    // Far beyond the limit of 2, yet none of these are limited.
+    for (let i = 0; i < 6; i++) {
+      expect((await limited.inject({ method: 'GET', url: '/health' })).statusCode).toBe(200);
+    }
+
+    // API requests are counted: the third within the window is refused with the standard envelope.
+    const statuses: number[] = [];
+    for (let i = 0; i < 3; i++) {
+      statuses.push((await limited.inject({ method: 'GET', url: '/api/v1/trips' })).statusCode);
+    }
+    expect(statuses).toEqual([401, 401, 429]);
+    const blocked = await limited.inject({ method: 'GET', url: '/api/v1/trips' });
+    expect(blocked.json().error.code).toBe('RATE_LIMITED');
+    await limited.close();
+  });
+
+  it('serves many asset and SPA requests under a tiny limit', async () => {
+    const dist = mkdtempSync(join(tmpdir(), 'daydrift-web-rl-'));
+    mkdirSync(join(dist, 'assets'));
+    writeFileSync(join(dist, 'index.html'), '<!doctype html><title>Daydrift</title>');
+    writeFileSync(join(dist, 'assets', 'a-1.js'), '1');
+    const limited = await buildApp({
+      aiPlanQueue: queue,
+      logger: false,
+      webDist: dist,
+      rateLimit: { max: 1, timeWindow: '1 minute' },
+    });
+
+    for (let i = 0; i < 8; i++) {
+      expect((await limited.inject({ method: 'GET', url: '/assets/a-1.js' })).statusCode).toBe(200);
+      expect(
+        (await limited.inject({ method: 'GET', url: '/trips/some-client-route' })).statusCode,
+      ).toBe(200);
+    }
+    await limited.close();
+  });
+});

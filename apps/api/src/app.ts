@@ -27,6 +27,8 @@ export interface AppOptions {
   /** Override the ai-plan producer (tests). Defaults to the real BullMQ queue. */
   aiPlanQueue?: AiPlanQueue;
   logger?: boolean;
+  /** Override the API rate limit (tests). */
+  rateLimit?: { max: number; timeWindow: string };
   /** Directory with the built SPA. Defaults to apps/web/dist; set false to disable. */
   webDist?: string | false;
 }
@@ -43,11 +45,12 @@ export async function buildApp(options: AppOptions = {}) {
   // CORS: prod locks to the web origin; dev is permissive. Credentials for cookie auth.
   await app.register(cors, { origin: isProd ? config.webUrl : true, credentials: true });
 
-  // Rate limiting (docs/04 §7); health probes are allow-listed so platform checks never throttle.
+  // Rate limiting (docs/04 §7) covers the API only: the SPA's scripts, styles and fonts, and the
+  // health probes, must never count against a visitor. Trip creation has its own, tighter limit.
   await app.register(rateLimit, {
-    max: isProd ? 100 : 10_000,
-    timeWindow: isProd ? '15 minutes' : '1 minute',
-    allowList: (req) => req.url === '/health' || req.url === '/health/ready',
+    max: options.rateLimit?.max ?? (isProd ? 300 : 10_000),
+    timeWindow: options.rateLimit?.timeWindow ?? (isProd ? '15 minutes' : '1 minute'),
+    allowList: (req) => !req.url.startsWith('/api/'),
   });
 
   const queue = options.aiPlanQueue ?? createAiPlanQueue();
