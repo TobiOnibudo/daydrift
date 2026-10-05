@@ -14,6 +14,9 @@ const core = {
   resetTrip: vi.fn(),
   checkDependencies: vi.fn(),
   listCities: vi.fn(),
+  shareTrip: vi.fn(),
+  unshareTrip: vi.fn(),
+  getSharedTrip: vi.fn(),
 };
 vi.mock('@daydrift/core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@daydrift/core')>()),
@@ -212,5 +215,47 @@ describe('places and platform routes', () => {
     const res = await app.inject({ method: 'GET', url: '/api/v1/nope' });
     expect(res.statusCode).toBe(404);
     expect(res.json().error.code).toBe('NOT_FOUND');
+  });
+});
+
+describe('sharing', () => {
+  const TOKEN = 'AbCdEfGhIjKlMnOpQrStUv';
+
+  it('lets the owner enable and disable sharing', async () => {
+    core.shareTrip.mockResolvedValue(TOKEN);
+    const on = await post(`/api/v1/trips/${TRIP_ID}/share`);
+    expect(on.json()).toEqual({ shareToken: TOKEN });
+    expect(core.shareTrip).toHaveBeenCalledWith(TRIP_ID, 'u1');
+
+    core.unshareTrip.mockResolvedValue(true);
+    const off = await app.inject({ method: 'DELETE', url: `/api/v1/trips/${TRIP_ID}/share` });
+    expect(off.statusCode).toBe(204);
+  });
+
+  it('404s when the trip is unfinished or not owned by the caller', async () => {
+    core.shareTrip.mockResolvedValue(null);
+    expect((await post(`/api/v1/trips/${TRIP_ID}/share`)).statusCode).toBe(404);
+  });
+
+  it('requires auth to manage sharing', async () => {
+    getSession.mockResolvedValue(null);
+    expect((await post(`/api/v1/trips/${TRIP_ID}/share`)).statusCode).toBe(401);
+  });
+
+  it('serves a shared trip publicly without a session, uncached', async () => {
+    getSession.mockResolvedValue(null);
+    core.getSharedTrip.mockResolvedValue({ id: TRIP_ID, title: 'Shared' });
+    const res = await app.inject({ method: 'GET', url: `/api/v1/shared/${TOKEN}` });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().trip.title).toBe('Shared');
+    expect(res.headers['cache-control']).toContain('no-store');
+  });
+
+  it('404s for unknown tokens and 400s for malformed ones', async () => {
+    core.getSharedTrip.mockResolvedValue(null);
+    expect((await app.inject({ method: 'GET', url: `/api/v1/shared/${TOKEN}` })).statusCode).toBe(
+      404,
+    );
+    expect((await app.inject({ method: 'GET', url: '/api/v1/shared/x' })).statusCode).toBe(400);
   });
 });

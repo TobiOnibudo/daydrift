@@ -8,7 +8,9 @@ import {
   listTrips,
   normalizeInput,
   resetTrip,
+  shareTrip,
   tripInput,
+  unshareTrip,
 } from '@daydrift/core';
 import { CreateTripInputSchema, type TripResult } from '@daydrift/types';
 import type { FastifyPluginAsync } from 'fastify';
@@ -72,6 +74,20 @@ export const tripRoutes: FastifyPluginAsync = async (app) => {
   app.delete('/trips/:id', async (request, reply) => {
     const { id } = parse(IdParams, request.params);
     if (!(await deleteTrip(id, request.userId))) throw AppError.notFound('Trip');
+    return reply.status(204).send();
+  });
+
+  // Sharing is opt-in per trip and only for completed trips; the token is the only credential.
+  app.post('/trips/:id/share', async (request) => {
+    const { id } = parse(IdParams, request.params);
+    const shareToken = await shareTrip(id, request.userId);
+    if (!shareToken) throw AppError.notFound('Completed trip');
+    return { shareToken };
+  });
+
+  app.delete('/trips/:id/share', async (request, reply) => {
+    const { id } = parse(IdParams, request.params);
+    if (!(await unshareTrip(id, request.userId))) throw AppError.notFound('Trip');
     return reply.status(204).send();
   });
 

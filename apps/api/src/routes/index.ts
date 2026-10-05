@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 
 import { placeRoutes } from './places.js';
+import { sharedRoutes } from './shared.js';
 import { sseRoutes } from './sse.js';
 import { tripRoutes } from './trips.js';
 
@@ -8,6 +9,7 @@ import { tripRoutes } from './trips.js';
 export const v1Routes: FastifyPluginAsync = async (app) => {
   await app.register(placeRoutes);
   await app.register(tripRoutes);
+  await app.register(sharedRoutes);
   await app.register(sseRoutes);
 };
 
