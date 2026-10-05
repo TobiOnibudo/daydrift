@@ -2,7 +2,7 @@ import { useReducedMotion } from 'framer-motion';
 import L, { type LatLngBoundsExpression, type LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Polyline as LeafletPolyline } from 'leaflet';
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 
 import type { TripLeg } from '../lib/types';
@@ -108,6 +108,13 @@ export function TripMap({
   const reduceMotion = useReducedMotion();
   const lineRef = useRef<LeafletPolyline | null>(null);
 
+  // Colour the line from the theme (an SVG attribute cannot read a CSS variable; a style can). The
+  // path only exists once Leaflet has added the layer, hence the `add` event.
+  const paintLine = useCallback((line: LeafletPolyline) => {
+    const el = line.getElement() as SVGPathElement | undefined;
+    if (el) el.style.stroke = 'hsl(var(--primary))';
+  }, []);
+
   // Draw the road route in from the first stop to the last. Transform-free: only the dash offset moves.
   useEffect(() => {
     const el = lineRef.current?.getElement() as SVGPathElement | undefined;
@@ -166,9 +173,9 @@ export function TripMap({
         />
         <Polyline
           ref={lineRef}
+          eventHandlers={{ add: (event) => paintLine(event.target as LeafletPolyline) }}
           positions={path}
           pathOptions={{
-            color: 'hsl(12 72% 38%)',
             weight: 4,
             opacity: 0.9,
             // Dashed when it is only a straight-line fallback, solid for a real road/path route.

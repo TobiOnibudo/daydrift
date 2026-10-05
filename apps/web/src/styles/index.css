@@ -34,6 +34,30 @@
     --chrome: 5.75rem;
   }
 
+  /* Night mode: deep teal-black paper, warm ink, and a lighter coral and sea so every pair still
+     clears WCAG AA. Toggled by the `dark` class on <html> (see hooks/useTheme.ts). */
+  .dark {
+    --background: 196 32% 7%;
+    --foreground: 40 30% 92%;
+    --card: 196 28% 11%;
+    --card-foreground: 40 30% 92%;
+    --primary: 14 86% 68%;
+    --primary-foreground: 196 40% 9%;
+    --secondary: 188 48% 66%;
+    --secondary-foreground: 196 40% 9%;
+    --muted: 196 22% 15%;
+    --muted-foreground: 40 14% 72%;
+    --accent: 196 26% 19%;
+    --accent-foreground: 40 30% 92%;
+    --destructive: 0 84% 70%;
+    --destructive-foreground: 196 40% 9%;
+    --border: 196 18% 21%;
+    --input: 196 16% 29%;
+    --ring: 14 86% 68%;
+    --sea: 188 48% 56%;
+    --sand: 36 50% 55%;
+  }
+
   * {
     @apply border-border;
   }
@@ -232,4 +256,33 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* OpenStreetMap tiles are light only, so night mode inverts them and warms them to match. */
+.dark .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.6);
+}
+.dark .leaflet-container {
+  background: hsl(var(--background));
+}
+.dark .leaflet-popup-content-wrapper,
+.dark .leaflet-popup-tip {
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+}
+.dark .leaflet-container .leaflet-control-attribution {
+  background: hsl(var(--card) / 0.92);
+  color: hsl(var(--foreground) / 0.85);
+}
+.dark .leaflet-container .leaflet-control-attribution a {
+  color: hsl(var(--secondary));
+}
+
+/* Hairline figures take their colours from the theme tokens, so they match in both modes. */
+.hairline-themed {
+  --hairline-plate: hsl(var(--card));
+  --hairline-hi: hsl(var(--primary));
+  --hairline-edge: hsl(var(--foreground) / 0.75);
+  --hairline-mid: hsl(var(--foreground) / 0.45);
+  --hairline-lo: hsl(var(--foreground) / 0.2);
 }

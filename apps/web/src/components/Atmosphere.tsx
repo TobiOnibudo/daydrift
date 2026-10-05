@@ -132,7 +132,7 @@ export function Atmosphere() {
         style={reduce ? undefined : { x: auroraX, y: auroraY }}
       >
         <div className="animate-drift bg-primary/15 absolute -left-10 top-0 h-[26rem] w-[26rem] rounded-full blur-3xl" />
-        <div className="animate-drift bg-sand/80 absolute right-0 top-1/4 h-[24rem] w-[24rem] rounded-full blur-3xl [animation-delay:-7s]" />
+        <div className="animate-drift bg-sand/80 dark:bg-sand/20 absolute right-0 top-1/4 h-[24rem] w-[24rem] rounded-full blur-3xl [animation-delay:-7s]" />
         <div className="animate-drift bg-sea/10 absolute bottom-0 left-1/3 h-[22rem] w-[22rem] rounded-full blur-3xl [animation-delay:-12s]" />
       </motion.div>
 

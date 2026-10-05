@@ -9,11 +9,12 @@ import { cn } from '../lib/utils';
 
 import { Atmosphere } from './Atmosphere';
 import { Logo } from './Logo';
+import { ThemeToggle } from './ThemeToggle';
 import { Button } from './ui/button';
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   cn(
-    'rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent',
+    'whitespace-nowrap rounded-md px-2 py-2 text-sm font-medium transition-colors hover:bg-accent sm:px-3',
     isActive ? 'bg-accent text-accent-foreground' : 'text-muted-foreground',
   );
 
@@ -59,13 +60,14 @@ export function AppShell() {
             {user && (
               <>
                 <NavLink to="/plan" className={navClass}>
-                  Plan a trip
+                  Plan<span className="max-[440px]:sr-only"> a trip</span>
                 </NavLink>
                 <NavLink to="/trips" className={navClass}>
                   My trips
                 </NavLink>
               </>
             )}
+            <ThemeToggle />
             {user ? (
               <Button
                 variant="ghost"
