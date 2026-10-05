@@ -1,4 +1,4 @@
-import { Slow } from '@lucasmarkes/hairline/react';
+import { Terrain } from '@lucasmarkes/hairline/react';
 import { RotateCcw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -65,10 +65,10 @@ export function TripGenerationView({
   return (
     <div className="grid gap-8 lg:grid-cols-[18rem_1fr]">
       <Card className="h-fit space-y-6 p-6">
-        {/* Crates riding a belt through a gate: your plan being assembled. Hover to slow time. */}
-        <Slow
+        {/* A little city of pillars on a plinth that rise around the pointer: the place taking shape. */}
+        <Terrain
           className="hairline-themed mx-auto w-full max-w-[16rem]"
-          label={revising ? 'Your guide reworking the plan' : 'Your plan being put together'}
+          label={revising ? 'A city map, reshaping around your changes' : 'A city map taking shape'}
           intensity={0.6}
         />
         <ProgressStepper step={stream.step} done={stream.phase === 'complete'} />
