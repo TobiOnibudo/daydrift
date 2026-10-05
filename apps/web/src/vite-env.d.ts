@@ -1,8 +1,8 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  /** Backend API origin, e.g. http://localhost:3000 (see docs/05-frontend.md §1). */
-  readonly VITE_API_URL: string;
+  /** Only set when the API is on a different origin than the SPA. Empty means same-origin. */
+  readonly VITE_API_URL?: string;
 }
 
 interface ImportMeta {

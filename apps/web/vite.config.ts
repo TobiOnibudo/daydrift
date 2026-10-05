@@ -1,18 +1,35 @@
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
-// Vite config for the Daydrift SPA (see docs/05-frontend.md §1).
-// `VITE_API_URL` is the backend origin; consumed in src/lib/api.ts via
-// `import.meta.env.VITE_API_URL`. Define a dev fallback here so the app
-// still boots when the env var is unset.
+// In dev, proxy API calls to the backend so the browser sees a single origin, exactly like
+// production (where the API serves this SPA). Cookies, SSE and CORS then just work.
+// Set VITE_API_URL only when the API is deployed on a different origin.
+const api = process.env.API_PROXY_TARGET ?? 'http://localhost:3000';
+
 export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    proxy: {
+      '/api': { target: api, changeOrigin: false },
+      '/health': { target: api, changeOrigin: false },
+    },
   },
-  define: {
-    'import.meta.env.VITE_API_URL': JSON.stringify(
-      process.env.VITE_API_URL ?? 'http://localhost:3000',
-    ),
+  build: {
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          leaflet: ['leaflet', 'react-leaflet'],
+          motion: ['framer-motion'],
+        },
+      },
+    },
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    globals: false,
+    css: false,
   },
 });

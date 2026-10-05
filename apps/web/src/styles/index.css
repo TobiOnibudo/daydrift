@@ -1,5 +1,138 @@
-/* Tailwind entry + design-system theme layer (see docs/05-frontend.md §6).
-   Token/theme CSS variables belong here; Tailwind config maps them to utilities. */
+@import '@fontsource-variable/fraunces';
+@import '@fontsource-variable/inter';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Design tokens. Values are HSL triplets consumed via tailwind.config.js.
+   Warm paper + ink with a coral "sunrise" accent and sea-teal secondary: a travel-journal feel.
+   All text/background pairs meet WCAG AA (primary on background is 5.6:1). */
+@layer base {
+  :root {
+    --background: 40 35% 95%;
+    --foreground: 196 38% 13%;
+    --card: 42 40% 98%;
+    --card-foreground: 196 38% 13%;
+    --primary: 12 72% 42%;
+    --primary-foreground: 42 40% 98%;
+    --secondary: 190 42% 24%;
+    --secondary-foreground: 42 40% 98%;
+    --muted: 38 25% 90%;
+    --muted-foreground: 196 18% 34%;
+    --accent: 36 70% 86%;
+    --accent-foreground: 196 38% 13%;
+    --destructive: 0 68% 40%;
+    --destructive-foreground: 42 40% 98%;
+    --border: 36 20% 82%;
+    --input: 36 20% 78%;
+    --ring: 12 72% 42%;
+    --sea: 190 42% 24%;
+    --sand: 36 70% 86%;
+    --radius: 0.75rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display tracking-tight;
+    font-variation-settings:
+      'SOFT' 60,
+      'WONK' 0;
+  }
+
+  :focus-visible {
+    @apply ring-ring ring-offset-background outline-none ring-2 ring-offset-2;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.25);
+  }
+}
+
+/* The signature: a dashed route line. Reused by dividers, the stepper, and the itinerary timeline. */
+@layer components {
+  .route-line {
+    background-image: repeating-linear-gradient(
+      to right,
+      hsl(var(--primary)) 0 6px,
+      transparent 6px 12px
+    );
+    height: 2px;
+  }
+
+  .route-line-v {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      hsl(var(--primary) / 0.7) 0 5px,
+      transparent 5px 10px
+    );
+    width: 2px;
+  }
+
+  .waypoint {
+    @apply border-primary bg-card text-primary inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-xs font-semibold;
+  }
+}
+
+/* Leaflet overrides so the map matches the paper palette and the numbered-marker style. */
+.daydrift-marker {
+  background: transparent;
+  border: 0;
+}
+
+.daydrift-marker span {
+  display: flex;
+  height: 2rem;
+  width: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 2px solid hsl(var(--card));
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  font:
+    600 0.8rem 'Inter Variable',
+    sans-serif;
+  box-shadow: 0 2px 8px hsl(var(--foreground) / 0.35);
+}
+
+.leaflet-container {
+  font-family: 'Inter Variable', sans-serif;
+  background: hsl(var(--muted));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes marker-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
