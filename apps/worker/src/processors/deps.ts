@@ -5,7 +5,10 @@ import {
   completeTrip,
   failTrip,
   fetchRoute,
+  getPlacesByIds,
+  getTripById,
   ItineraryOutputSchema,
+  restoreTrip,
   searchCandidatePlaces,
 } from '@daydrift/core';
 
@@ -20,6 +23,9 @@ export function createAiPlanDeps(publisher: TripEventPublisher, logger: Logger):
     claimTrip,
     completeTrip,
     failTrip,
+    restoreTrip,
+    getTrip: getTripById,
+    getPlaces: getPlacesByIds,
     searchCandidates: searchCandidatePlaces,
     planItinerary: async (prompt) =>
       (await generateObject({ schema: ItineraryOutputSchema, prompt })).object,

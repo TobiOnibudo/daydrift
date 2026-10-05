@@ -1,10 +1,14 @@
-import { closeRedis, failTrip } from '@daydrift/core';
+import { closeRedis, failTrip, restoreTrip } from '@daydrift/core';
 import { assertEmbeddingDimension } from '@daydrift/db';
 import { createAiPlanWorker } from '@daydrift/queue';
 
 import { createTripEventPublisher } from './events.js';
 import { logger } from './logger.js';
-import { createAiPlanProcessor, FAILURE_MESSAGE } from './processors/ai-plan.js';
+import {
+  createAiPlanProcessor,
+  FAILURE_MESSAGE,
+  REFINE_FAILURE_MESSAGE,
+} from './processors/ai-plan.js';
 import { createAiPlanDeps } from './processors/deps.js';
 import { startEmbedPlaceWorker } from './processors/embed-place.js';
 
@@ -20,10 +24,16 @@ const embedPlaceWorker = startEmbedPlaceWorker(logger);
 // stalled job that exhausted its retries: mark the trip failed and tell any listening client.
 aiPlanWorker.on('failed', (job, err) => {
   if (!job || job.attemptsMade < (job.opts.attempts ?? 1)) return;
-  const { tripId } = job.data;
+  const { tripId, refine } = job.data;
   logger.error({ jobId: job.id, tripId, err: String(err) }, 'ai-plan job exhausted retries');
-  void failTrip(tripId)
-    .then(() => publisher.publish(tripId, { event: 'failed', data: { message: FAILURE_MESSAGE } }))
+  // A failed revision leaves the trip as it was; a failed first plan has nothing to fall back to.
+  void (refine ? restoreTrip(tripId) : failTrip(tripId))
+    .then(() =>
+      publisher.publish(tripId, {
+        event: 'failed',
+        data: { message: refine ? REFINE_FAILURE_MESSAGE : FAILURE_MESSAGE },
+      }),
+    )
     .catch((e: unknown) =>
       logger.error({ tripId, err: String(e) }, 'could not record job failure'),
     );

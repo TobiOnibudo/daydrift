@@ -2,7 +2,12 @@ import type { ItineraryOutput } from '@daydrift/core';
 import type { Place, Trip, TripEvent, TripResult } from '@daydrift/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createAiPlanProcessor, FAILURE_MESSAGE, type AiPlanDeps } from '../processors/ai-plan.js';
+import {
+  createAiPlanProcessor,
+  FAILURE_MESSAGE,
+  REFINE_FAILURE_MESSAGE,
+  type AiPlanDeps,
+} from '../processors/ai-plan.js';
 
 const input = {
   city: 'toronto',
@@ -49,6 +54,22 @@ const fakeTrip = (result: TripResult): Trip => ({
   ...result,
 });
 
+// A finished trip whose stops are the first two candidates.
+const currentTrip: Trip = fakeTrip({
+  title: 'Old plan',
+  vibeTags: ['calm'],
+  legs: [candidates[0]!, candidates[1]!].map((c, i) => ({
+    placeId: c.id,
+    name: c.name,
+    order: i + 1,
+    lat: c.lat,
+    lng: c.lng,
+  })),
+  routeGeojson: null,
+  totalDistanceKm: 1,
+  narrative: 'Old notes.',
+});
+
 const job = { id: 'job-1', data: { tripId: 'trip-1', input } };
 
 let events: TripEvent[];
@@ -60,6 +81,9 @@ beforeEach(() => {
     claimTrip: vi.fn(async () => true),
     completeTrip: vi.fn(async (_id, result) => fakeTrip(result)),
     failTrip: vi.fn(async () => undefined),
+    restoreTrip: vi.fn(async () => undefined),
+    getTrip: vi.fn(async () => currentTrip),
+    getPlaces: vi.fn(async (ids: string[]) => candidates.filter((c) => ids.includes(c.id))),
     searchCandidates: vi.fn(async () => candidates),
     planItinerary: vi.fn(async () => plan),
     streamNarrative: vi.fn(async function* () {
@@ -165,5 +189,51 @@ describe('ai-plan processor', () => {
     await run();
     expect(eventNames()).not.toContain('complete');
     expect(deps.cacheResult).not.toHaveBeenCalled();
+  });
+});
+
+describe('ai-plan processor: revising a trip', () => {
+  const refineJob = {
+    id: 'job-2',
+    data: { tripId: 'trip-1', input, refine: { instruction: 'It is raining' } },
+  };
+  const runRefine = () => createAiPlanProcessor(deps)(refineJob);
+
+  it('plans from the current stops plus new matches and saves the revision', async () => {
+    await runRefine();
+
+    const prompt = vi.mocked(deps.planItinerary).mock.calls[0]![0];
+    expect(prompt).toContain('"It is raining"');
+    expect(prompt).toContain('Current itinerary, in order: 1. p1, 2. p2');
+    // the narrative is asked to answer the request
+    expect(vi.mocked(deps.streamNarrative).mock.calls[0]![0]).toContain('It is raining');
+
+    expect(vi.mocked(deps.completeTrip)).toHaveBeenCalledOnce();
+    const saved = vi.mocked(deps.completeTrip).mock.calls[0]![1];
+    expect(saved.narrative).toBe('Start here.');
+    expect(eventNames()).toEqual(['status', 'status', 'token', 'token', 'status', 'complete']);
+    // a personal revision is never shared through the result cache
+    expect(deps.cacheResult).not.toHaveBeenCalled();
+    expect(deps.restoreTrip).not.toHaveBeenCalled();
+  });
+
+  it('leaves the trip as it was, and says so, when the revision fails', async () => {
+    vi.mocked(deps.planItinerary).mockRejectedValue(new Error('provider down'));
+    await runRefine();
+
+    expect(deps.completeTrip).not.toHaveBeenCalled();
+    expect(deps.failTrip).not.toHaveBeenCalled();
+    expect(deps.restoreTrip).toHaveBeenCalledWith('trip-1');
+    expect(events.at(-1)).toEqual({
+      event: 'failed',
+      data: { message: REFINE_FAILURE_MESSAGE },
+    });
+  });
+
+  it('restores the trip if it has nothing to revise', async () => {
+    vi.mocked(deps.getTrip).mockResolvedValue(null);
+    await runRefine();
+    expect(deps.restoreTrip).toHaveBeenCalledOnce();
+    expect(deps.planItinerary).not.toHaveBeenCalled();
   });
 });
