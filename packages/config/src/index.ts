@@ -8,7 +8,30 @@
  * Fail-fast: invalid/missing required values throw at startup, not at the
  * first request that needs them. In production the required set is stricter.
  */
+import { existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+
 import { z } from 'zod';
+
+/**
+ * Load the workspace-root .env (dev convenience). Walks up from cwd to the directory holding
+ * pnpm-workspace.yaml; never overrides variables already set, so real environments win.
+ */
+function loadWorkspaceEnv(): void {
+  let dir = process.cwd();
+  for (;;) {
+    if (existsSync(join(dir, 'pnpm-workspace.yaml'))) {
+      const file = join(dir, '.env');
+      if (existsSync(file)) process.loadEnvFile?.(file);
+      return;
+    }
+    const parent = dirname(dir);
+    if (parent === dir) return;
+    dir = parent;
+  }
+}
+
+loadWorkspaceEnv();
 
 /**
  * Built-in embedding-model → vector-dimension map. This is the dimension SSOT
