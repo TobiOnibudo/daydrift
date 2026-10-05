@@ -31,20 +31,40 @@ If ports 5432/6379 are taken, set `POSTGRES_PORT`/`REDIS_PORT` in `.env` and mat
 Local LLMs are slow on CPU; raise `LLM_TIMEOUT_MS` or use a hosted model. On timeout the worker falls back to a proximity itinerary. See
 [docs/07-local-dev.md](./docs/07-local-dev.md).
 
+## Testing
+
+| Command                 | What it runs                                                                                                                                                        |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm test`             | Unit and component tests (no infrastructure needed).                                                                                                                |
+| `pnpm test:integration` | Repositories, caches, vector search and the dimension guard against real Postgres + Redis (isolated `daydrift_test` DB).                                            |
+| `pnpm e2e`              | Playwright journeys, error workflows and WCAG checks on a full stack (API + worker + built SPA) with an offline mock AI provider, so no Ollama or OpenAI is needed. |
+| `pnpm load`             | Load test of reads, cached trip creation and queue throughput on the same hermetic stack.                                                                           |
+| `pnpm eval`             | Retrieval quality (precision, recall, NDCG, MRR) against the seeded database; `--update-baseline` records a new baseline.                                           |
+
+CI runs all of the above except `eval`/`load` against Postgres and Redis service containers.
+
+## Deploying
+
+The API serves the built SPA, so production is two services plus Postgres and Redis. See
+[deploy/railway/README.md](./deploy/railway/README.md) for the Railway config, environment variables
+(including the embedding-dimension note), and the first-deploy checklist.
+
 ## Repo map
 
-| Path            | What                                              |
-| --------------- | ------------------------------------------------- |
-| apps/api        | HTTP API (REST + SSE), serves the SPA             |
-| apps/worker     | Background trip-generation jobs                   |
-| apps/web        | Vite + React SPA                                  |
-| packages/config | Env SSOT (Zod), fail-fast validation              |
-| packages/db     | Drizzle schema + migrations (Postgres + pgvector) |
-| packages/core   | Retrieval, scoring, itinerary, routing            |
-| packages/ai     | LLM + embedding clients (Vercel AI SDK)           |
-| packages/queue  | BullMQ setup                                      |
-| packages/auth   | Better Auth config                                |
-| packages/types  | Shared Zod schemas + types                        |
+| Path            | What                                                 |
+| --------------- | ---------------------------------------------------- |
+| apps/api        | HTTP API (REST + SSE), serves the SPA                |
+| apps/worker     | Background trip-generation jobs                      |
+| apps/web        | Vite + React SPA                                     |
+| packages/config | Env SSOT (Zod), fail-fast validation                 |
+| packages/db     | Drizzle schema + migrations (Postgres + pgvector)    |
+| packages/core   | Retrieval, scoring, itinerary, routing               |
+| packages/ai     | LLM + embedding clients (Vercel AI SDK)              |
+| packages/queue  | BullMQ setup                                         |
+| packages/auth   | Better Auth config                                   |
+| packages/types  | Shared Zod schemas + types                           |
+| e2e             | Playwright end-to-end, accessibility, and load tests |
+| deploy/railway  | Railway service configs and deployment guide         |
 
 Full specification: [/docs](./docs).
 
