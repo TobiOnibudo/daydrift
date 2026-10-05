@@ -13,3 +13,7 @@ export * from './normalization.js';
 export * from './trip-cache.js';
 export { closeRedis, getRedis } from './redis.js';
 export * from './trips/repository.js';
+export * from './seeding/cities.js';
+export * from './places/repository.js';
+export * from './retrieval/semantic.js';
+export * from './health.js';

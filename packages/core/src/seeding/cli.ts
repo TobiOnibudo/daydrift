@@ -1,17 +1,11 @@
-import { seedCity, type CityDefinition } from './seed-city.js';
+import { CITIES, findCity } from './cities.js';
+import { seedCity } from './seed-city.js';
 
-const CITIES: Record<string, CityDefinition> = {
-  toronto: {
-    name: 'Toronto',
-    bbox: { south: 43.62, west: -79.43, north: 43.7, east: -79.34 },
-  },
-};
-
-const key = (process.argv[2] ?? 'toronto').toLowerCase();
-const city = CITIES[key];
+const requested = process.argv[2] ?? 'toronto';
+const city = findCity(requested);
 
 if (!city) {
-  console.error(`Unknown city "${key}". Known: ${Object.keys(CITIES).join(', ')}`);
+  console.error(`Unknown city "${requested}". Known: ${Object.keys(CITIES).join(', ')}`);
   process.exit(1);
 }
 
