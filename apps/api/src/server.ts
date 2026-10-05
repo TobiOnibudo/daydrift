@@ -1,7 +1,11 @@
 import { config } from '@daydrift/config';
 import { closeRedis } from '@daydrift/core';
+import { assertEmbeddingDimension } from '@daydrift/db';
 
 import { buildApp } from './app.js';
+
+// Refuse to serve against a schema the configured embedding model cannot write to.
+await assertEmbeddingDimension();
 
 const app = await buildApp();
 

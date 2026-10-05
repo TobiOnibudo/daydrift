@@ -1,4 +1,5 @@
 import { closeRedis, failTrip } from '@daydrift/core';
+import { assertEmbeddingDimension } from '@daydrift/db';
 import { createAiPlanWorker } from '@daydrift/queue';
 
 import { createTripEventPublisher } from './events.js';
@@ -8,6 +9,8 @@ import { createAiPlanDeps } from './processors/deps.js';
 import { startEmbedPlaceWorker } from './processors/embed-place.js';
 
 // Native background worker: no HTTP server (docs/01 §Process model, fixes v1 #6).
+
+await assertEmbeddingDimension();
 
 const publisher = createTripEventPublisher();
 const aiPlanWorker = createAiPlanWorker(createAiPlanProcessor(createAiPlanDeps(publisher, logger)));
