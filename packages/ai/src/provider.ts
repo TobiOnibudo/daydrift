@@ -3,6 +3,8 @@ import { config } from '@daydrift/config';
 import type { EmbeddingModel, LanguageModel } from 'ai';
 import { createOllama } from 'ollama-ai-provider';
 
+import { createMockEmbeddingModel, createMockLanguageModel } from './mock-provider.js';
+
 // Provider resolution for the AI SDK. The provider is a config switch (Ollama in dev,
 // OpenAI in prod, or any OpenAI-compatible endpoint), so no app ever hand-rolls a fetch.
 // See docs/03-rag-pipeline.md §6.
@@ -23,6 +25,13 @@ const ollamaApiUrl = (base?: string) =>
 const openaiLike = (s: ProviderSettings) =>
   createOpenAI({ apiKey: s.apiKey ?? config.openaiApiKey, baseURL: s.baseUrl });
 
+/** The offline mock models exist for tests and CI only; a production deploy must never use them. */
+function assertMockAllowed(): void {
+  if (config.nodeEnv === 'production') {
+    throw new Error('The mock AI provider is not allowed in production.');
+  }
+}
+
 const requireModel = (s: ProviderSettings, kind: string): string => {
   if (!s.model) throw new Error(`No ${kind} model configured.`);
   return s.model;
@@ -31,6 +40,10 @@ const requireModel = (s: ProviderSettings, kind: string): string => {
 /** Resolve the configured chat/completion model instance. */
 export function getLanguageModel(): LanguageModel {
   const s: ProviderSettings = config.llm;
+  if (s.provider === 'mock') {
+    assertMockAllowed();
+    return createMockLanguageModel() as unknown as LanguageModel;
+  }
   const model = requireModel(s, 'LLM');
   switch (s.provider) {
     case 'ollama':
@@ -48,6 +61,10 @@ export function getLanguageModel(): LanguageModel {
 /** Resolve the configured embedding model instance. */
 export function getEmbeddingModel(): EmbeddingModel<string> {
   const s: ProviderSettings = config.embedding;
+  if (s.provider === 'mock') {
+    assertMockAllowed();
+    return createMockEmbeddingModel(config.embedding.dim) as unknown as EmbeddingModel<string>;
+  }
   const model = requireModel(s, 'embedding');
   switch (s.provider) {
     case 'ollama':
