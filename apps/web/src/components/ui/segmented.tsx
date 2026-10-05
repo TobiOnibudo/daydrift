@@ -37,7 +37,7 @@ export function Segmented<T extends string>({
             className={cn(
               'has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-background relative flex cursor-pointer flex-col rounded-lg border px-4 py-3 text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-offset-2',
               checked
-                ? 'border-primary bg-primary/10 text-foreground'
+                ? 'border-primary bg-primary/[0.18] text-foreground dark:bg-primary/[0.22]'
                 : 'border-input bg-card hover:bg-accent/60',
             )}
           >
