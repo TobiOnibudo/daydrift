@@ -48,8 +48,8 @@ export function LandingPage() {
       {/* Accent: slow drifting color, static for users who prefer reduced motion. */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
         <div className="animate-drift bg-primary/20 absolute -left-24 -top-24 h-96 w-96 rounded-full blur-3xl" />
-        <div className="animate-drift bg-sand absolute -right-16 top-10 h-80 w-80 rounded-full blur-3xl [animation-delay:-6s]" />
-        <div className="animate-drift bg-sea/10 absolute bottom-0 left-1/3 h-72 w-72 rounded-full blur-3xl [animation-delay:-11s]" />
+        <div className="animate-drift dark:bg-sand/40 absolute -right-16 top-10 h-80 w-80 rounded-full bg-[hsl(36_70%_86%)] blur-3xl [animation-delay:-6s]" />
+        <div className="animate-drift dark:bg-sea/10 absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-[hsl(190_42%_24%/0.1)] blur-3xl [animation-delay:-11s]" />
       </div>
 
       <div className="container grid items-center gap-8 lg:grid-cols-[1.05fr_1fr] lg:gap-12">

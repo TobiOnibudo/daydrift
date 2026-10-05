@@ -277,12 +277,3 @@
 .dark .leaflet-container .leaflet-control-attribution a {
   color: hsl(var(--secondary));
 }
-
-/* Hairline figures take their colours from the theme tokens, so they match in both modes. */
-.hairline-themed {
-  --hairline-plate: hsl(var(--card));
-  --hairline-hi: hsl(var(--primary));
-  --hairline-edge: hsl(var(--foreground) / 0.75);
-  --hairline-mid: hsl(var(--foreground) / 0.45);
-  --hairline-lo: hsl(var(--foreground) / 0.2);
-}

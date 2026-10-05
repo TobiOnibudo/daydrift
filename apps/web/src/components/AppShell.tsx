@@ -37,6 +37,10 @@ export function AppShell() {
   return (
     <div className="min-h-app relative flex flex-col">
       {pathname !== '/' && <Atmosphere />}
+      {/* The warm paper the landing page always had, behind the whole page in light mode. */}
+      {pathname === '/' && (
+        <div aria-hidden="true" className="fixed inset-0 -z-10 bg-[hsl(40_35%_95%)] dark:hidden" />
+      )}
       <a
         href="#main"
         className="bg-primary text-primary-foreground sr-only z-50 rounded-md px-4 py-2 focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
@@ -53,7 +57,12 @@ export function AppShell() {
         </div>
       )}
 
-      <header className="bg-background/80 border-b backdrop-blur">
+      <header
+        className={cn(
+          'border-b backdrop-blur',
+          pathname === '/' ? 'dark:bg-background/80 bg-transparent' : 'bg-background/80',
+        )}
+      >
         <div className="container flex h-14 items-center justify-between gap-4">
           <Logo />
           <nav aria-label="Main" className="flex items-center gap-1">
