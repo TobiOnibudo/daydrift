@@ -62,9 +62,11 @@ export function HeroScene({ className }: { className?: string }) {
         initial={reduce ? false : { opacity: 0, y: 24, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ type: 'spring', stiffness: 120, damping: 18, delay: 0.15 }}
-        className="bg-card/80 shadow-soft relative overflow-hidden rounded-2xl border p-6 backdrop-blur [transform-style:preserve-3d]"
+        className="bg-card/80 shadow-soft relative rounded-2xl border px-8 pb-5 pt-14 backdrop-blur [transform-style:preserve-3d]"
       >
-        <TopoBackground />
+        <div aria-hidden="true" className="absolute inset-0 overflow-hidden rounded-2xl">
+          <TopoBackground />
+        </div>
         <div className="relative">
           <RouteTrace traveler />
           {/* Pins drop onto the stops as the route reaches them. */}

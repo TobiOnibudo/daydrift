@@ -38,7 +38,7 @@ export function RouteTrace({ className, loop = false, traveler = false }: RouteT
   useAnimationFrame((time) => {
     const path = pathRef.current;
     const dot = dotRef.current;
-    if (!traveler || !animate || !path || !dot) return;
+    if (!traveler || !animate || !path || !dot || typeof path.getTotalLength !== 'function') return;
     length.current ||= path.getTotalLength();
     // Ease in and out of each lap so the traveler lingers at the ends like it is sightseeing.
     const t = (time / 1000 / LAP_SECONDS) % 1;
@@ -51,7 +51,7 @@ export function RouteTrace({ className, loop = false, traveler = false }: RouteT
     <svg
       viewBox={`0 0 ${TRACE_VIEWBOX.width} ${TRACE_VIEWBOX.height}`}
       aria-hidden="true"
-      className={cn('text-primary h-auto w-full', className)}
+      className={cn('text-primary h-auto w-full overflow-visible', className)}
       fill="none"
     >
       <motion.path
