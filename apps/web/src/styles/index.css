@@ -6,7 +6,7 @@
 @tailwind utilities;
 
 /* Design tokens. Values are HSL triplets consumed via tailwind.config.js.
-   Cool neutral greys with a graphite accent (near-white in dark mode) and a slate secondary.
+   Cool neutral greys with a coral "sunrise" accent and a slate-teal secondary.
    All text/background pairs meet WCAG AA. */
 @layer base {
   :root {
@@ -14,9 +14,9 @@
     --foreground: 220 18% 12%;
     --card: 0 0% 100%;
     --card-foreground: 220 18% 12%;
-    --primary: 220 20% 14%;
+    --primary: 12 76% 42%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 215 18% 38%;
+    --secondary: 205 34% 27%;
     --secondary-foreground: 0 0% 100%;
     --muted: 220 13% 92%;
     --muted-foreground: 220 10% 32%;
@@ -26,24 +26,24 @@
     --destructive-foreground: 0 0% 100%;
     --border: 220 12% 86%;
     --input: 220 10% 76%;
-    --ring: 220 20% 14%;
-    --sea: 215 18% 38%;
+    --ring: 12 76% 42%;
+    --sea: 205 34% 27%;
     --sand: 220 14% 84%;
     --radius: 0.75rem;
     /* Header + footer height, so pages can size themselves to the screen that is left. */
     --chrome: 5.75rem;
   }
 
-  /* Night mode: deep charcoal, soft off-white ink, and a near-white accent so every pair still
+  /* Night mode: deep charcoal, soft off-white ink, and a lighter coral and sea so every pair still
      clears WCAG AA. Toggled by the `dark` class on <html> (see hooks/useTheme.ts). */
   .dark {
     --background: 220 10% 8%;
     --foreground: 220 12% 93%;
     --card: 220 9% 12%;
     --card-foreground: 220 12% 93%;
-    --primary: 220 14% 94%;
+    --primary: 14 86% 68%;
     --primary-foreground: 220 12% 8%;
-    --secondary: 215 16% 72%;
+    --secondary: 196 50% 66%;
     --secondary-foreground: 220 12% 8%;
     --muted: 220 8% 16%;
     --muted-foreground: 220 8% 68%;
@@ -53,9 +53,9 @@
     --destructive-foreground: 220 12% 8%;
     --border: 220 8% 22%;
     --input: 220 8% 30%;
-    --ring: 220 14% 94%;
-    --sea: 215 14% 60%;
-    --sand: 220 8% 30%;
+    --ring: 14 86% 68%;
+    --sea: 196 45% 55%;
+    --sand: 220 10% 42%;
   }
 
   * {
@@ -167,9 +167,6 @@
   transform: scale(1.32);
   background: hsl(var(--secondary));
   border-color: hsl(var(--accent));
-  box-shadow:
-    0 0 0 4px hsl(var(--primary) / 0.28),
-    0 2px 8px hsl(var(--foreground) / 0.35);
 }
 
 .leaflet-container {
