@@ -15,6 +15,8 @@ export const AI_PLAN_QUEUE = 'ai-plan' as const;
 export interface AiPlanJobData {
   tripId: string;
   input: CreateTripInput;
+  /** Revise the trip's current itinerary as the traveler asked, instead of planning from scratch. */
+  refine?: { instruction: string };
 }
 
 /** Default worker options. `lockDuration` ~10min covers slow LLM generation. */

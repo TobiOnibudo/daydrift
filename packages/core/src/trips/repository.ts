@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 
 import { db, trips } from '@daydrift/db';
 import type { CreateTripInput, Duration, Trip, TripResult, TravelMode } from '@daydrift/types';
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull } from 'drizzle-orm';
 
 type TripRow = typeof trips.$inferSelect;
 
@@ -197,4 +197,37 @@ export async function updateTripStops(
     .where(and(eq(trips.id, id), eq(trips.userId, userId), eq(trips.status, 'complete')))
     .returning();
   return row ? tripFromRow(row) : null;
+}
+
+/** A trip by id alone, for the worker (which has no session). */
+export async function getTripById(id: string): Promise<Trip | null> {
+  const [row] = await db.select().from(trips).where(eq(trips.id, id));
+  return row ? tripFromRow(row) : null;
+}
+
+/**
+ * Put a finished trip back in the queue for the guide to revise. Unlike `resetTrip` the current
+ * itinerary is kept, so a failed revision leaves the trip as it was. Null unless it was complete.
+ */
+export async function startRefine(id: string, userId: string): Promise<Trip | null> {
+  const [row] = await db
+    .update(trips)
+    .set({ status: 'pending' })
+    .where(and(eq(trips.id, id), eq(trips.userId, userId), eq(trips.status, 'complete')))
+    .returning();
+  return row ? tripFromRow(row) : null;
+}
+
+/** Give up on a revision: a trip that still has its itinerary goes back to complete. */
+export async function restoreTrip(id: string): Promise<void> {
+  await db
+    .update(trips)
+    .set({ status: 'complete' })
+    .where(
+      and(
+        eq(trips.id, id),
+        inArray(trips.status, ['pending', 'processing']),
+        isNotNull(trips.legs),
+      ),
+    );
 }
