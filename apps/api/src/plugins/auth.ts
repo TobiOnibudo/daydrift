@@ -1,5 +1,7 @@
 import { auth, fromNodeHeaders } from '@daydrift/auth';
-import type { FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastify';
+import type { preHandlerAsyncHookHandler } from 'fastify';
+
+import { AppError } from '../lib/errors.js';
 
 // Augment FastifyRequest with the authenticated user id (declaration merging).
 declare module 'fastify' {
@@ -8,37 +10,12 @@ declare module 'fastify' {
   }
 }
 
-export interface ErrorEnvelope {
-  error: {
-    code: string;
-    message: string;
-    details?: unknown;
-  };
-}
-
-/** Build the standard { error: { code, message, details? } } envelope (docs/04 §2). */
-export function errorEnvelope(code: string, message: string, details?: unknown): ErrorEnvelope {
-  return details === undefined
-    ? { error: { code, message } }
-    : { error: { code, message, details } };
-}
-
 /**
- * Fastify preHandler that validates the Better Auth session (cookie or bearer)
- * and sets `request.userId`. Emits UNAUTHORIZED (401) when no valid session.
+ * Validates the Better Auth session (cookie or bearer) and sets `request.userId`.
+ * Throws UNAUTHORIZED (401) when there is no valid session.
  */
-export const requireAuth: preHandlerHookHandler = async (
-  request: FastifyRequest,
-  reply: FastifyReply,
-) => {
-  const session = await auth.api.getSession({
-    headers: fromNodeHeaders(request.headers),
-  });
-
-  if (!session?.user?.id) {
-    reply.status(401);
-    return reply.send(errorEnvelope('UNAUTHORIZED', 'Authentication required'));
-  }
-
+export const requireAuth: preHandlerAsyncHookHandler = async (request) => {
+  const session = await auth.api.getSession({ headers: fromNodeHeaders(request.headers) });
+  if (!session?.user?.id) throw new AppError(401, 'UNAUTHORIZED', 'Authentication required');
   request.userId = session.user.id;
 };
