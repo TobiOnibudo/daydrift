@@ -30,6 +30,8 @@
     --sea: 190 42% 24%;
     --sand: 36 70% 86%;
     --radius: 0.75rem;
+    /* Header + footer height, so pages can size themselves to the screen that is left. */
+    --chrome: 5.75rem;
   }
 
   * {
@@ -64,6 +66,23 @@
 }
 
 /* The signature: a dashed route line. Reused by dividers, the stepper, and the itinerary timeline. */
+@layer utilities {
+  /* 100vh first for old browsers, then dvh so mobile browser toolbars don't crop the page. */
+  .min-h-app {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  .min-h-fit-screen {
+    min-height: calc(100vh - var(--chrome));
+    min-height: calc(100dvh - var(--chrome));
+  }
+  /* Full remaining height, but never so short that content is crushed on small windows. */
+  .fit-screen {
+    height: max(calc(100vh - var(--chrome) - 1.5rem), 34rem);
+    height: max(calc(100dvh - var(--chrome) - 1.5rem), 34rem);
+  }
+}
+
 @layer components {
   .route-line {
     background-image: repeating-linear-gradient(
@@ -151,4 +170,38 @@
     opacity: 1;
     transform: scale(1);
   }
+}
+
+/* Skeletons shimmer instead of pulsing: a soft highlight sweeps across. */
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, hsl(var(--card) / 0.65), transparent);
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+@keyframes shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes chip-pop {
+  0% {
+    transform: scale(0.92);
+  }
+  60% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.chip-pop {
+  animation: chip-pop 0.28s ease-out;
 }

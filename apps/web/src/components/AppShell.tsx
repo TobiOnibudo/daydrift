@@ -33,7 +33,7 @@ export function AppShell() {
     });
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="min-h-app flex flex-col">
       <a
         href="#main"
         className="bg-primary text-primary-foreground sr-only z-50 rounded-md px-4 py-2 focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
@@ -51,7 +51,7 @@ export function AppShell() {
       )}
 
       <header className="bg-background/80 border-b backdrop-blur">
-        <div className="container flex h-16 items-center justify-between gap-4">
+        <div className="container flex h-14 items-center justify-between gap-4">
           <Logo />
           <nav aria-label="Main" className="flex items-center gap-1">
             {user && (
@@ -95,7 +95,7 @@ export function AppShell() {
         </motion.div>
       </main>
 
-      <footer className="text-muted-foreground border-t py-6 text-center text-xs">
+      <footer className="text-muted-foreground border-t py-2 text-center text-xs">
         Places and routes from{' '}
         <a className="underline underline-offset-2" href="https://www.openstreetmap.org/copyright">
           OpenStreetMap

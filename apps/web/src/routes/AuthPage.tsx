@@ -117,7 +117,7 @@ export function AuthPage() {
   };
 
   return (
-    <div className="container flex justify-center py-14">
+    <div className="min-h-fit-screen container flex items-center justify-center py-6">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-3xl">

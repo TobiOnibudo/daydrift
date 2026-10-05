@@ -19,3 +19,5 @@ if (!window.matchMedia) {
       onchange: null,
     }) as MediaQueryList;
 }
+
+window.scrollTo = () => undefined;

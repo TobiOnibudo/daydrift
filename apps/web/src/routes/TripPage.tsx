@@ -102,14 +102,19 @@ export function TripPage() {
   // A malformed id is answered with 400 and an unknown or foreign one with 404: both mean "not yours".
   const notFound = error instanceof ApiError && (error.status === 404 || error.status === 400);
 
+  const finished = !isPending && !error && trip.status === 'complete';
+  const back = (
+    <Link
+      to="/trips"
+      className="text-muted-foreground hover:text-foreground inline-block text-sm transition-colors"
+    >
+      ← All trips
+    </Link>
+  );
+
   return (
-    <div className="container py-10">
-      <Link
-        to="/trips"
-        className="text-muted-foreground hover:text-foreground mb-6 inline-block text-sm"
-      >
-        ← All trips
-      </Link>
+    <div className={finished ? 'container max-w-[96rem] py-3' : 'container py-10'}>
+      {!finished && <div className="mb-6">{back}</div>}
 
       {isPending ? (
         <div className="space-y-4" role="status" aria-label="Loading trip">
@@ -137,6 +142,7 @@ export function TripPage() {
       ) : trip.status === 'complete' ? (
         <TripResultView
           trip={trip}
+          back={back}
           actions={<TripActions trip={trip} onRegenerate={handleRegenerate} />}
         />
       ) : trip.status === 'failed' ? (

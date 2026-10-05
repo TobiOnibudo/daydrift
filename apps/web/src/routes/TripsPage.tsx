@@ -28,7 +28,7 @@ export function TripsPage() {
   };
 
   return (
-    <div className="container max-w-3xl py-12">
+    <div className="container max-w-3xl py-8">
       <header className="mb-8 flex items-end justify-between gap-4">
         <h1 className="text-4xl font-semibold">My trips</h1>
         <Button asChild>

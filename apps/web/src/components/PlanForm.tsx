@@ -97,7 +97,11 @@ export function PlanForm({ cities, submitting, error, fieldErrors = {}, onSubmit
   const chips = [...new Set([...SUGGESTIONS, ...interests])];
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8" noValidate>
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-6 lg:grid lg:grid-cols-2 lg:gap-x-10 lg:space-y-0"
+      noValidate
+    >
       {error && (
         <p
           ref={summaryRef}
@@ -109,112 +113,118 @@ export function PlanForm({ cities, submitting, error, fieldErrors = {}, onSubmit
         </p>
       )}
 
-      <Field id="city" label="Where are you headed?" error={fieldErrors.city}>
-        <select
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          className="border-input bg-card flex h-11 w-full rounded-md border px-3 text-sm"
-        >
-          {cities.map((c) => (
-            <option key={c.key} value={c.key}>
-              {c.name} ({c.placeCount} places)
-            </option>
-          ))}
-        </select>
-      </Field>
-
-      <fieldset className="space-y-3">
-        <legend className="text-sm font-medium">What are you into?</legend>
-        <p className="text-muted-foreground text-sm">
-          Pick a few, or add your own. Leave it empty for a bit of everything.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {chips.map((interest) => {
-            const selected = interests.includes(interest);
-            return (
-              <button
-                key={interest}
-                type="button"
-                aria-pressed={selected}
-                disabled={!selected && atLimit}
-                onClick={() => toggle(interest)}
-                className={cn(
-                  'rounded-full border px-4 py-1.5 text-sm capitalize transition-colors disabled:opacity-40',
-                  selected
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-input bg-card hover:bg-accent',
-                )}
-              >
-                {interest}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="flex items-start gap-2">
-          <Field
-            id="custom-interest"
-            label="Add your own interest"
-            error={customError ?? fieldErrors.interests}
-            hint={
-              atLimit
-                ? `You have reached the limit of ${MAX_INTERESTS} interests.`
-                : `${interests.length} of ${MAX_INTERESTS} chosen`
-            }
-            className="flex-1"
+      <div className="space-y-6">
+        <Field id="city" label="Where are you headed?" error={fieldErrors.city}>
+          <select
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            className="border-input bg-card flex h-11 w-full rounded-md border px-3 text-sm"
           >
-            <Input
-              placeholder="Something else? e.g. street art"
-              value={custom}
-              maxLength={MAX_INTEREST_LENGTH + 20}
+            {cities.map((c) => (
+              <option key={c.key} value={c.key}>
+                {c.name} ({c.placeCount} places)
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <fieldset className="space-y-3">
+          <legend className="text-sm font-medium">What are you into?</legend>
+          <p className="text-muted-foreground text-sm">
+            Pick a few, or add your own. Leave it empty for a bit of everything.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {chips.map((interest) => {
+              const selected = interests.includes(interest);
+              return (
+                <button
+                  key={interest}
+                  type="button"
+                  aria-pressed={selected}
+                  disabled={!selected && atLimit}
+                  onClick={() => toggle(interest)}
+                  className={cn(
+                    'rounded-full border px-4 py-1.5 text-sm capitalize transition-colors disabled:opacity-40',
+                    selected
+                      ? 'chip-pop border-primary bg-primary text-primary-foreground'
+                      : 'border-input bg-card hover:bg-accent',
+                  )}
+                >
+                  {interest}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-start gap-2">
+            <Field
+              id="custom-interest"
+              label="Add your own interest"
+              error={customError ?? fieldErrors.interests}
+              hint={
+                atLimit
+                  ? `You have reached the limit of ${MAX_INTERESTS} interests.`
+                  : `${interests.length} of ${MAX_INTERESTS} chosen`
+              }
+              className="flex-1"
+            >
+              <Input
+                placeholder="Something else? e.g. street art"
+                value={custom}
+                maxLength={MAX_INTEREST_LENGTH + 20}
+                disabled={atLimit}
+                onChange={(e) => {
+                  setCustom(e.target.value);
+                  if (customError) setCustomError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addCustom();
+                  }
+                }}
+              />
+            </Field>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={addCustom}
               disabled={atLimit}
-              onChange={(e) => {
-                setCustom(e.target.value);
-                if (customError) setCustomError(null);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  addCustom();
-                }
-              }}
-            />
-          </Field>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={addCustom}
-            disabled={atLimit}
-            className="mt-[1.625rem]"
-          >
-            <Plus aria-hidden="true" /> Add
-          </Button>
+              className="mt-[1.625rem]"
+            >
+              <Plus aria-hidden="true" /> Add
+            </Button>
+          </div>
+        </fieldset>
+      </div>
+
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <span className="text-sm font-medium">How long do you have?</span>
+          <Segmented
+            label="Trip length"
+            value={duration}
+            options={DURATIONS}
+            onChange={setDuration}
+          />
+          {fieldErrors.duration && (
+            <p className="text-destructive text-sm">{fieldErrors.duration}</p>
+          )}
         </div>
-      </fieldset>
 
-      <div className="space-y-2">
-        <span className="text-sm font-medium">How long do you have?</span>
-        <Segmented
-          label="Trip length"
-          value={duration}
-          options={DURATIONS}
-          onChange={setDuration}
-        />
-        {fieldErrors.duration && <p className="text-destructive text-sm">{fieldErrors.duration}</p>}
+        <div className="space-y-2">
+          <span className="text-sm font-medium">How are you getting around?</span>
+          <Segmented label="Travel mode" value={mode} options={MODES} onChange={setMode} />
+          {fieldErrors.travelMode && (
+            <p className="text-destructive text-sm">{fieldErrors.travelMode}</p>
+          )}
+        </div>
+
+        <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={!city || submitting}>
+          <Sparkles aria-hidden="true" />
+          {submitting ? 'Starting…' : 'Plan my trip'}
+        </Button>
       </div>
-
-      <div className="space-y-2">
-        <span className="text-sm font-medium">How are you getting around?</span>
-        <Segmented label="Travel mode" value={mode} options={MODES} onChange={setMode} />
-        {fieldErrors.travelMode && (
-          <p className="text-destructive text-sm">{fieldErrors.travelMode}</p>
-        )}
-      </div>
-
-      <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={!city || submitting}>
-        <Sparkles aria-hidden="true" />
-        {submitting ? 'Starting…' : 'Plan my trip'}
-      </Button>
     </form>
   );
 }

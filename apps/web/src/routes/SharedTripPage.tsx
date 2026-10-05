@@ -15,7 +15,7 @@ export function SharedTripPage() {
   const gone = error instanceof ApiError && [400, 404].includes(error.status);
 
   return (
-    <div className="container py-10">
+    <div className="container max-w-[96rem] py-3">
       {isPending ? (
         <div className="space-y-4" role="status" aria-label="Loading shared trip">
           <Skeleton className="h-10 w-1/2" />

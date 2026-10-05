@@ -17,9 +17,9 @@ export function PlanPage() {
   const showProblem = problem && problem.kind !== 'session';
 
   return (
-    <div className="container max-w-2xl py-12">
-      <header className="mb-8 space-y-2">
-        <h1 className="text-4xl font-semibold">Plan a trip</h1>
+    <div className="container max-w-5xl py-6 lg:py-5">
+      <header className="mb-5 space-y-1 lg:mb-4">
+        <h1 className="text-3xl font-semibold sm:text-4xl">Plan a trip</h1>
         <p className="text-muted-foreground">Tell us the vibe and we will build the day.</p>
       </header>
 
