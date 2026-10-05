@@ -115,6 +115,7 @@ export const trips = pgTable(
     vibeTags: jsonb('vibe_tags').$type<string[]>(),
     status: text('status').$type<TripStatus>().notNull().default('pending'),
     inputHash: text('input_hash').notNull(),
+    shareToken: text('share_token').unique(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (t) => ({

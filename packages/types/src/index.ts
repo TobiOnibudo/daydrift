@@ -86,6 +86,7 @@ export const TripSchema = z.object({
   totalDistanceKm: z.number().nullable().optional(),
   vibeTags: z.array(z.string()),
   status: TripStatusSchema,
+  shareToken: z.string().nullable().optional(),
   createdAt: z.date(),
 });
 export type Trip = z.infer<typeof TripSchema>;
