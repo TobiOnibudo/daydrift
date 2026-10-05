@@ -56,4 +56,4 @@ run('pnpm db:migrate');
 step('Seeding a sample city');
 run('pnpm seed');
 
-step('Setup complete. Run `pnpm dev` to start api + worker + web.');
+step('Setup complete. Run `pnpm dev`: the worker then embeds the seeded places (search works once that finishes).');
