@@ -30,10 +30,10 @@ const plan: ItineraryOutput = {
   title: 'Art & Coffee',
   vibeTags: ['artsy'],
   legs: [
-    { placeId: candidates[2]!.id, order: 2, rationale: 'b' },
-    { placeId: candidates[0]!.id, order: 1, rationale: 'a' },
+    { placeId: 'p3', order: 2, rationale: 'b' },
+    { placeId: 'p1', order: 1, rationale: 'a' },
     { placeId: 'hallucinated', order: 3, rationale: 'x' },
-    { placeId: candidates[4]!.id, order: 4, rationale: 'c' },
+    { placeId: 'p5', order: 4, rationale: 'c' },
   ],
 };
 

@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 
-import { buildItineraryPrompt, buildNarrativePrompt, stopRange } from '../prompt.js';
+import {
+  buildItineraryPrompt,
+  buildNarrativePrompt,
+  resolvePlaceRefs,
+  stopRange,
+} from '../prompt.js';
 
 import { makePlace } from './fixtures.js';
 
@@ -22,11 +27,14 @@ describe('stopRange', () => {
 describe('buildItineraryPrompt', () => {
   const candidates = [makePlace({ id: 'p1', name: 'Coffee House', description: 'Cozy' })];
 
-  it('lists every candidate with its id, name and category', () => {
-    const prompt = buildItineraryPrompt(candidates, input);
-    expect(prompt).toContain('id: p1');
-    expect(prompt).toContain('Coffee House');
-    expect(prompt).toContain('category: cafe');
+  it('lists candidates by short ref with name and category, not by uuid', () => {
+    const uuid = '7d4b8a3e-7c43-4f6f-9d1b-1f2b7a9c0e11';
+    const prompt = buildItineraryPrompt(
+      [makePlace({ id: uuid, name: 'Coffee House', description: 'Cozy' })],
+      input,
+    );
+    expect(prompt).toContain('- p1: Coffee House (cafe) - Cozy');
+    expect(prompt).not.toContain(uuid);
   });
 
   it('states the stop range and restricts to provided ids', () => {
@@ -56,5 +64,19 @@ describe('buildNarrativePrompt', () => {
     );
     expect(prompt.indexOf('Alpha')).toBeLessThan(prompt.indexOf('Beta'));
     expect(prompt).toContain('Day Out');
+  });
+});
+
+describe('resolvePlaceRefs', () => {
+  const candidates = [makePlace({ id: 'id-a' }), makePlace({ id: 'id-b' })];
+  const leg = (placeId: string, order: number) => ({ placeId, order, rationale: 'r' });
+
+  it('maps refs back to real ids and drops unknown refs', () => {
+    const plan = {
+      title: 'T',
+      vibeTags: [],
+      legs: [leg('P2', 1), leg('p9', 2), leg('p1', 3), leg('id-a', 4)],
+    };
+    expect(resolvePlaceRefs(plan, candidates).legs.map((l) => l.placeId)).toEqual(['id-b', 'id-a']);
   });
 });

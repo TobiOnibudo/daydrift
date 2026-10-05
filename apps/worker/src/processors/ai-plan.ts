@@ -5,6 +5,7 @@ import {
   hashInput,
   normalizeItineraryLegs,
   pathDistanceKm,
+  resolvePlaceRefs,
   stopRange,
   type ItineraryOutput,
   type RouteResult,
@@ -104,7 +105,10 @@ export function createAiPlanProcessor(deps: AiPlanDeps) {
           event: 'status',
           data: { step: 'generating', label: 'Building your itinerary' },
         });
-        const itinerary = await deps.planItinerary(buildItineraryPrompt(candidates, input));
+        const itinerary = resolvePlaceRefs(
+          await deps.planItinerary(buildItineraryPrompt(candidates, input)),
+          candidates,
+        );
         await streamNarrative(itinerary, candidates);
 
         await deps.publish(tripId, {
