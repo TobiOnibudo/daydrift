@@ -5,7 +5,7 @@ import { useTheme } from '../hooks/useTheme';
 
 import { Button } from './ui/button';
 
-/** Switches between the light paper look and the dark night look. */
+/** Switches between the light and dark looks. */
 export function ThemeToggle() {
   const { theme, toggle } = useTheme();
   const dark = theme === 'dark';

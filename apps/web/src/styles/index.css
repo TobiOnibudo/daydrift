@@ -6,56 +6,56 @@
 @tailwind utilities;
 
 /* Design tokens. Values are HSL triplets consumed via tailwind.config.js.
-   Warm paper + ink with a coral "sunrise" accent and sea-teal secondary: a travel-journal feel.
-   All text/background pairs meet WCAG AA (primary on background is 6.3:1). */
+   Cool neutral greys with a coral "sunrise" accent and a slate-teal secondary.
+   All text/background pairs meet WCAG AA. */
 @layer base {
   :root {
-    --background: 40 35% 95%;
-    --foreground: 196 38% 13%;
-    --card: 42 40% 98%;
-    --card-foreground: 196 38% 13%;
-    --primary: 12 72% 38%;
-    --primary-foreground: 42 40% 98%;
-    --secondary: 190 42% 24%;
-    --secondary-foreground: 42 40% 98%;
-    --muted: 38 25% 90%;
-    --muted-foreground: 196 20% 29%;
-    --accent: 36 70% 86%;
-    --accent-foreground: 196 38% 13%;
+    --background: 220 14% 96%;
+    --foreground: 220 18% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 18% 12%;
+    --primary: 12 76% 42%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 205 34% 27%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 220 13% 92%;
+    --muted-foreground: 220 10% 32%;
+    --accent: 220 14% 90%;
+    --accent-foreground: 220 18% 12%;
     --destructive: 0 68% 40%;
-    --destructive-foreground: 42 40% 98%;
-    --border: 36 20% 82%;
-    --input: 36 20% 78%;
-    --ring: 12 72% 38%;
-    --sea: 190 42% 24%;
-    --sand: 36 70% 86%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 12% 86%;
+    --input: 220 10% 76%;
+    --ring: 12 76% 42%;
+    --sea: 205 34% 27%;
+    --sand: 220 14% 84%;
     --radius: 0.75rem;
     /* Header + footer height, so pages can size themselves to the screen that is left. */
     --chrome: 5.75rem;
   }
 
-  /* Night mode: deep teal-black paper, warm ink, and a lighter coral and sea so every pair still
+  /* Night mode: deep charcoal, soft off-white ink, and a lighter coral and sea so every pair still
      clears WCAG AA. Toggled by the `dark` class on <html> (see hooks/useTheme.ts). */
   .dark {
-    --background: 196 32% 7%;
-    --foreground: 40 30% 92%;
-    --card: 196 28% 11%;
-    --card-foreground: 40 30% 92%;
+    --background: 220 10% 8%;
+    --foreground: 220 12% 93%;
+    --card: 220 9% 12%;
+    --card-foreground: 220 12% 93%;
     --primary: 14 86% 68%;
-    --primary-foreground: 196 40% 9%;
-    --secondary: 188 48% 66%;
-    --secondary-foreground: 196 40% 9%;
-    --muted: 196 22% 15%;
-    --muted-foreground: 40 14% 72%;
-    --accent: 196 26% 19%;
-    --accent-foreground: 40 30% 92%;
+    --primary-foreground: 220 12% 8%;
+    --secondary: 196 50% 66%;
+    --secondary-foreground: 220 12% 8%;
+    --muted: 220 8% 16%;
+    --muted-foreground: 220 8% 68%;
+    --accent: 220 9% 20%;
+    --accent-foreground: 220 12% 93%;
     --destructive: 0 84% 70%;
-    --destructive-foreground: 196 40% 9%;
-    --border: 196 18% 21%;
-    --input: 196 16% 29%;
+    --destructive-foreground: 220 12% 8%;
+    --border: 220 8% 22%;
+    --input: 220 8% 30%;
     --ring: 14 86% 68%;
-    --sea: 188 48% 56%;
-    --sand: 36 50% 55%;
+    --sea: 196 45% 55%;
+    --sand: 220 10% 42%;
   }
 
   * {
