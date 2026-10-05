@@ -32,6 +32,10 @@ function assertMockAllowed(): void {
   }
 }
 
+/** text-embedding-3 models can return fewer dimensions; ask for exactly what the schema stores. */
+const embeddingSettings = (model: string) =>
+  model.startsWith('text-embedding-3') ? { dimensions: config.embedding.dim } : {};
+
 const requireModel = (s: ProviderSettings, kind: string): string => {
   if (!s.model) throw new Error(`No ${kind} model configured.`);
   return s.model;
@@ -72,9 +76,17 @@ export function getEmbeddingModel(): EmbeddingModel<string> {
         model,
       ) as unknown as EmbeddingModel<string>;
     case 'openai':
-      return openaiLike(s).embedding(model) as unknown as EmbeddingModel<string>;
+      return openaiLike(s).embedding(
+        model,
+        embeddingSettings(model),
+      ) as unknown as EmbeddingModel<string>;
     default:
-      if (s.baseUrl) return openaiLike(s).embedding(model) as unknown as EmbeddingModel<string>;
+      if (s.baseUrl) {
+        return openaiLike(s).embedding(
+          model,
+          embeddingSettings(model),
+        ) as unknown as EmbeddingModel<string>;
+      }
       throw new Error(
         `Unsupported embedding provider "${s.provider}" (set EMBEDDING_BASE_URL for a generic endpoint).`,
       );
