@@ -3,52 +3,63 @@ import { config } from '@daydrift/config';
 import type { EmbeddingModel, LanguageModel } from 'ai';
 import { createOllama } from 'ollama-ai-provider';
 
-// Provider resolution for the AI SDK. The provider is a config switch
-// (Ollama in dev / OpenAI in prod / generic OpenAI-compatible endpoint),
-// so no app ever hand-rolls a fetch. See docs/03-rag-pipeline.md §6.
+// Provider resolution for the AI SDK. The provider is a config switch (Ollama in dev,
+// OpenAI in prod, or any OpenAI-compatible endpoint), so no app ever hand-rolls a fetch.
+// See docs/03-rag-pipeline.md §6.
 
-// `@daydrift/config` only guarantees `provider` + `model`; base URL / API key
-// are optional provider-specific extras, so we read them through a loose view.
-type ProviderSettings = {
-  provider: string;
-  model: string;
-  baseURL?: string;
-  apiKey?: string;
+interface ProviderSettings {
+  provider: string | undefined;
+  model: string | undefined;
+  baseUrl: string | undefined;
+  apiKey: string | undefined;
+}
+
+const DEFAULT_OLLAMA_URL = 'http://localhost:11434';
+
+/** ollama-ai-provider expects the `/api` suffix, which OLLAMA_BASE_URL omits. */
+const ollamaApiUrl = (base?: string) =>
+  `${(base ?? config.ollamaBaseUrl ?? DEFAULT_OLLAMA_URL).replace(/\/+$/, '')}/api`;
+
+const openaiLike = (s: ProviderSettings) =>
+  createOpenAI({ apiKey: s.apiKey ?? config.openaiApiKey, baseURL: s.baseUrl });
+
+const requireModel = (s: ProviderSettings, kind: string): string => {
+  if (!s.model) throw new Error(`No ${kind} model configured.`);
+  return s.model;
 };
-
-const llm = config.llm as unknown as ProviderSettings;
-const embedding = config.embedding as unknown as ProviderSettings;
 
 /** Resolve the configured chat/completion model instance. */
 export function getLanguageModel(): LanguageModel {
-  switch (llm.provider) {
-    case 'ollama': {
-      const ollama = createOllama({ baseURL: llm.baseURL });
-      return ollama(llm.model) as unknown as LanguageModel;
-    }
-    case 'openai': {
-      const openai = createOpenAI({ apiKey: llm.apiKey });
-      return openai(llm.model) as unknown as LanguageModel;
-    }
+  const s: ProviderSettings = config.llm;
+  const model = requireModel(s, 'LLM');
+  switch (s.provider) {
+    case 'ollama':
+      return createOllama({ baseURL: ollamaApiUrl(s.baseUrl) })(model) as unknown as LanguageModel;
+    case 'openai':
+      return openaiLike(s)(model) as unknown as LanguageModel;
     default:
-      // TODO: generic OpenAI-compatible endpoint (LLM_BASE_URL / LLM_API_KEY).
-      throw new Error(`Unsupported LLM provider: ${llm.provider}`);
+      if (s.baseUrl) return openaiLike(s)(model) as unknown as LanguageModel;
+      throw new Error(
+        `Unsupported LLM provider "${s.provider}" (set LLM_BASE_URL for a generic endpoint).`,
+      );
   }
 }
 
 /** Resolve the configured embedding model instance. */
 export function getEmbeddingModel(): EmbeddingModel<string> {
-  switch (embedding.provider) {
-    case 'ollama': {
-      const ollama = createOllama({ baseURL: embedding.baseURL });
-      return ollama.embedding(embedding.model) as unknown as EmbeddingModel<string>;
-    }
-    case 'openai': {
-      const openai = createOpenAI({ apiKey: embedding.apiKey });
-      return openai.embedding(embedding.model) as unknown as EmbeddingModel<string>;
-    }
+  const s: ProviderSettings = config.embedding;
+  const model = requireModel(s, 'embedding');
+  switch (s.provider) {
+    case 'ollama':
+      return createOllama({ baseURL: ollamaApiUrl(s.baseUrl) }).embedding(
+        model,
+      ) as unknown as EmbeddingModel<string>;
+    case 'openai':
+      return openaiLike(s).embedding(model) as unknown as EmbeddingModel<string>;
     default:
-      // TODO: generic OpenAI-compatible endpoint (EMBEDDING_BASE_URL / EMBEDDING_API_KEY).
-      throw new Error(`Unsupported embedding provider: ${embedding.provider}`);
+      if (s.baseUrl) return openaiLike(s).embedding(model) as unknown as EmbeddingModel<string>;
+      throw new Error(
+        `Unsupported embedding provider "${s.provider}" (set EMBEDDING_BASE_URL for a generic endpoint).`,
+      );
   }
 }
