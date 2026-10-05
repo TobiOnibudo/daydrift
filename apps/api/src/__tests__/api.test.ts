@@ -20,6 +20,8 @@ const core = {
   buildEditedResult: vi.fn(),
   updateTripStops: vi.fn(),
   suggestPlacesForTrip: vi.fn(),
+  startRefine: vi.fn(),
+  restoreTrip: vi.fn(),
 };
 vi.mock('@daydrift/core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@daydrift/core')>()),
@@ -352,5 +354,67 @@ describe('editing stops', () => {
         })
       ).statusCode,
     ).toBe(400);
+  });
+});
+
+describe('POST /api/v1/trips/:id/refine', () => {
+  const stored = {
+    id: TRIP_ID,
+    status: 'complete',
+    city: 'toronto',
+    interests: ['art'],
+    duration: 'half-day',
+    travelMode: 'walking',
+  };
+  const refine = (payload: unknown) => post(`/api/v1/trips/${TRIP_ID}/refine`, payload);
+
+  it("keeps the itinerary and queues a revision with the traveler's words", async () => {
+    core.getTrip.mockResolvedValue(stored);
+    core.startRefine.mockResolvedValue({ ...stored, status: 'pending' });
+
+    const res = await refine({ instruction: '  It is raining  ' });
+
+    expect(res.statusCode).toBe(202);
+    expect(res.json()).toEqual({ tripId: TRIP_ID, status: 'pending' });
+    const [, data, opts] = queue.add.mock.calls[0]!;
+    expect(data).toEqual({
+      tripId: TRIP_ID,
+      input: { city: 'toronto', interests: ['art'], duration: 'half-day', travelMode: 'walking' },
+      refine: { instruction: 'It is raining' },
+    });
+    expect(opts.jobId).toMatch(new RegExp(`^${TRIP_ID}-refine-\\d+$`));
+    expect(core.resetTrip).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['nothing', {}],
+    ['too little', { instruction: 'a' }],
+    ['too much', { instruction: 'x'.repeat(301) }],
+  ])('rejects %s to go on before touching the trip', async (_name, payload) => {
+    const res = await refine(payload);
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.code).toBe('VALIDATION_ERROR');
+    expect(core.startRefine).not.toHaveBeenCalled();
+  });
+
+  it('404s for a trip that is not yours and 409s while one is being planned', async () => {
+    core.getTrip.mockResolvedValue(null);
+    expect((await refine({ instruction: 'more food' })).statusCode).toBe(404);
+
+    core.getTrip.mockResolvedValue({ ...stored, status: 'processing' });
+    core.startRefine.mockResolvedValue(null);
+    expect((await refine({ instruction: 'more food' })).statusCode).toBe(409);
+    expect(queue.add).not.toHaveBeenCalled();
+  });
+
+  it('puts the trip back and reports unavailability if the job cannot be queued', async () => {
+    core.getTrip.mockResolvedValue(stored);
+    core.startRefine.mockResolvedValue({ ...stored, status: 'pending' });
+    queue.add.mockRejectedValue(new Error('redis down'));
+
+    const res = await refine({ instruction: 'more food' });
+
+    expect(res.statusCode).toBe(503);
+    expect(core.restoreTrip).toHaveBeenCalledWith(TRIP_ID);
   });
 });

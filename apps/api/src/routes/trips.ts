@@ -8,9 +8,12 @@ import {
   hashInput,
   insertTrip,
   listTrips,
+  MAX_INSTRUCTION,
   normalizeInput,
   resetTrip,
+  restoreTrip,
   shareTrip,
+  startRefine,
   suggestPlacesForTrip,
   TripEditError,
   tripInput,
@@ -33,6 +36,13 @@ const CREATE_LIMIT = {
 
 const ListQuery = z.object({ city: z.string().trim().min(1).optional() });
 const StopsBody = z.object({ placeIds: z.array(z.string().uuid()).min(2).max(8) });
+const RefineBody = z.object({
+  instruction: z
+    .string()
+    .trim()
+    .min(3, 'Tell your guide what you would like changed.')
+    .max(MAX_INSTRUCTION, `Keep it under ${MAX_INSTRUCTION} characters.`),
+});
 const SuggestionQuery = z.object({ q: z.string().trim().max(80).optional() });
 
 export const tripRoutes: FastifyPluginAsync = async (app) => {
@@ -120,6 +130,32 @@ export const tripRoutes: FastifyPluginAsync = async (app) => {
     const trip = await getTrip(id, request.userId);
     if (!trip) throw AppError.notFound('Trip');
     return { places: await suggestPlacesForTrip(trip, q) };
+  });
+
+  // Ask the guide to revise a finished trip ("it's raining", "running late"). The current itinerary
+  // stays until the revision succeeds. Each revision is an LLM run, so it shares the create limit.
+  app.post('/trips/:id/refine', { config: { rateLimit: CREATE_LIMIT } }, async (request, reply) => {
+    const { id } = parse(IdParams, request.params);
+    const { instruction } = parse(RefineBody, request.body);
+
+    const existing = await getTrip(id, request.userId);
+    if (!existing) throw AppError.notFound('Trip');
+
+    const trip = await startRefine(id, request.userId);
+    if (!trip) throw AppError.conflict('This trip is still being planned.');
+
+    try {
+      await app.aiPlanQueue.add(
+        'ai-plan',
+        { tripId: trip.id, input: tripInput(trip), refine: { instruction } },
+        { jobId: `${trip.id}-refine-${Date.now()}` },
+      );
+    } catch (err) {
+      request.log.error({ err, tripId: trip.id }, 'failed to enqueue refine job');
+      await restoreTrip(trip.id);
+      throw new AppError(503, 'SERVICE_UNAVAILABLE', 'Your guide is temporarily unavailable');
+    }
+    return reply.status(202).send({ tripId: trip.id, status: trip.status });
   });
 
   // Sharing is opt-in per trip and only for completed trips; the token is the only credential.
