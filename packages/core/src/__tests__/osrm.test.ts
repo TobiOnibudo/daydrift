@@ -15,7 +15,9 @@ describe('fetchRoute', () => {
       ok: true,
       json: async () => ({
         code: 'Ok',
-        routes: [{ distance: 1701.6, geometry: { type: 'LineString', coordinates: [[-79.38, 43.65]] } }],
+        routes: [
+          { distance: 1701.6, geometry: { type: 'LineString', coordinates: [[-79.38, 43.65]] } },
+        ],
       }),
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -36,7 +38,10 @@ describe('fetchRoute', () => {
   });
 
   it('throws on HTTP errors and on non-Ok OSRM codes', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500, statusText: 'boom' }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 500, statusText: 'boom' }),
+    );
     await expect(fetchRoute(coords)).rejects.toThrow('OSRM request failed');
 
     vi.stubGlobal(

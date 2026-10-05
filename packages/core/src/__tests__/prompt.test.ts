@@ -39,7 +39,10 @@ describe('buildItineraryPrompt', () => {
 
 describe('buildNarrativePrompt', () => {
   it('orders stops by leg order and resolves names', () => {
-    const candidates = [makePlace({ id: 'a', name: 'Alpha' }), makePlace({ id: 'b', name: 'Beta' })];
+    const candidates = [
+      makePlace({ id: 'a', name: 'Alpha' }),
+      makePlace({ id: 'b', name: 'Beta' }),
+    ];
     const prompt = buildNarrativePrompt(
       {
         title: 'Day Out',

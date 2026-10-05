@@ -1,4 +1,3 @@
-
 import { config } from '@daydrift/config';
 import type { Place } from '@daydrift/types';
 import { Redis } from 'ioredis';
@@ -16,10 +15,7 @@ export async function getCityPlacePool(city: string): Promise<Place[] | null> {
   return JSON.parse(cached) as Place[];
 }
 
-export async function setCityPlacePool(
-  city: string,
-  places: Place[],
-): Promise<void> {
+export async function setCityPlacePool(city: string, places: Place[]): Promise<void> {
   const key = `places:city:${city.toLowerCase()}`;
   await redis.setex(key, PLACE_POOL_TTL, JSON.stringify(places));
 }

@@ -13,100 +13,112 @@ export interface PlaceInsert {
   tags: Record<string, string>;
 }
 
-export function mapOverpassToPlace(
-  osm: OverpassPlace,
-  cityName: string,
-): PlaceInsert | null {
-  const name = osm.tags.name || osm.tags['name:en'];
-  if (!name) return null; // Skip unnamed places
+function inferCategory(tags: Record<string, string>): PlaceCategory | null {
+  switch (tags.amenity) {
+    case 'cafe':
+      return 'cafe';
+    case 'restaurant':
+    case 'pub':
+    case 'bar':
+      return 'restaurant';
+    case 'theatre':
+    case 'cinema':
+    case 'arts_centre':
+      return 'theatre';
+    case 'marketplace':
+      return 'market';
+  }
+  switch (tags.tourism) {
+    case 'museum':
+      return 'museum';
+    case 'gallery':
+      return 'gallery';
+    case 'viewpoint':
+      return 'viewpoint';
+    case 'attraction':
+    case 'zoo':
+    case 'aquarium':
+      return 'landmark';
+  }
+  if (tags.leisure === 'park' || tags.leisure === 'garden') return 'park';
+  if (tags.historic) return 'landmark';
+  return null;
+}
+
+const humanize = (s: string) => s.replace(/_/g, ' ');
+
+/** Prefer the OSM description; otherwise synthesize a short label like "pizza restaurant". */
+function describe(tags: Record<string, string>): string {
+  if (tags['description:en'] ?? tags.description)
+    return (tags['description:en'] ?? tags.description) as string;
+  const kind = tags.amenity ?? tags.tourism ?? tags.leisure ?? tags.historic ?? '';
+  const cuisine = tags.cuisine ? `${humanize(tags.cuisine).replace(/;/g, ', ')} ` : '';
+  return `${cuisine}${kind === 'yes' ? 'historic site' : humanize(kind)}`.trim();
+}
+
+export function mapOverpassToPlace(osm: OverpassPlace, cityName: string): PlaceInsert | null {
+  const name = osm.tags['name:en'] ?? osm.tags.name;
+  if (!name) return null;
 
   const category = inferCategory(osm.tags);
   if (!category) return null;
 
-  const description =
-    osm.tags.description ||
-    osm.tags['description:en'] ||
-    osm.tags.amenity ||
-    osm.tags.tourism ||
-    osm.tags.leisure ||
-    null;
-
   return {
     osmId: `${osm.type}/${osm.id}`,
     name,
-    city: cityName.toLowerCase(),
+    city: cityName.trim().toLowerCase(),
     category,
-    description,
+    description: describe(osm.tags) || null,
     lat: osm.lat,
     lng: osm.lon,
     tags: osm.tags,
   };
 }
 
-function inferCategory(tags: Record<string, string>): PlaceCategory | null {
-  // Restaurant/Food
-  if (
-    tags.amenity === 'restaurant' ||
-    tags.amenity === 'cafe' ||
-    tags.amenity === 'bar' ||
-    tags.amenity === 'pub' ||
-    tags.amenity === 'fast_food' ||
-    tags.amenity === 'food_court' ||
-    tags.amenity === 'ice_cream' ||
-    tags.amenity === 'biergarten'
-  ) {
-    return tags.amenity === 'cafe' ? 'cafe' : 'restaurant';
-  }
+const RICH_TAGS = [
+  'wikipedia',
+  'wikidata',
+  'website',
+  'contact:website',
+  'description',
+  'opening_hours',
+];
 
-  // Tourism
-  if (tags.tourism === 'museum') return 'museum';
-  if (tags.tourism === 'gallery' || tags.tourism === 'artwork') return 'museum';
-  if (
-    tags.tourism === 'viewpoint' ||
-    tags.tourism === 'attraction' ||
-    tags.tourism === 'theme_park'
-  )
-    return 'viewpoint';
+const richness = (p: PlaceInsert) => RICH_TAGS.filter((k) => p.tags[k]).length;
 
-  // Leisure/Parks
-  if (
-    tags.leisure === 'park' ||
-    tags.leisure === 'garden' ||
-    tags.leisure === 'nature_reserve'
-  )
-    return 'park';
+export const DEFAULT_CATEGORY_CAPS: Partial<Record<PlaceCategory, number>> = {
+  restaurant: 40,
+  cafe: 30,
+};
 
-  // Historic
-  if (
-    tags.historic === 'monument' ||
-    tags.historic === 'memorial' ||
-    tags.historic === 'castle' ||
-    tags.historic === 'ruins' ||
-    tags.historic
-  )
-    return 'historic';
+/** Dedupe by osmId, then keep the best-documented places per capped category. */
+export function capByCategory(
+  places: PlaceInsert[],
+  caps: Partial<Record<PlaceCategory, number>> = DEFAULT_CATEGORY_CAPS,
+): PlaceInsert[] {
+  const unique = [...new Map(places.map((p) => [p.osmId, p])).values()];
+  const ranked = unique.sort((a, b) => richness(b) - richness(a));
 
-  // Entertainment
-  if (
-    tags.leisure === 'stadium' ||
-    tags.leisure === 'sports_centre' ||
-    tags.amenity === 'cinema' ||
-    tags.amenity === 'theatre' ||
-    tags.amenity === 'arts_centre'
-  )
-    return 'entertainment';
+  const counts = new Map<PlaceCategory, number>();
+  return ranked.filter((p) => {
+    const cap = caps[p.category];
+    const n = counts.get(p.category) ?? 0;
+    if (cap !== undefined && n >= cap) return false;
+    counts.set(p.category, n + 1);
+    return true;
+  });
+}
 
-  // Shopping
-  if (
-    tags.shop === 'mall' ||
-    tags.shop === 'department_store' ||
-    tags.shop === 'books' ||
-    tags.shop === 'art' ||
-    tags.shop === 'music' ||
-    tags.shop === 'gift' ||
-    tags.shop
-  )
-    return 'shop';
-
-  return null;
+/** The text that gets embedded: name plus the signals a traveler would search by. */
+export function placeEmbeddingText(p: {
+  name: string;
+  category: string;
+  description: string | null;
+  tags: unknown;
+}): string {
+  const tags = (p.tags ?? {}) as Record<string, string>;
+  const parts = [p.name, p.category, p.description, tags.cuisine, tags.historic, tags.tourism];
+  return [...new Set(parts.filter((s): s is string => Boolean(s && s !== 'yes')))]
+    .map(humanize)
+    .join('. ');
 }

@@ -21,9 +21,7 @@ import { vectorSearch } from './vector-search.js';
  *
  * @returns up to 15 diverse candidate places.
  */
-export async function searchCandidatePlaces(
-  input: CreateTripInput,
-): Promise<Place[]> {
+export async function searchCandidatePlaces(input: CreateTripInput): Promise<Place[]> {
   const city = input.city.toLowerCase();
 
   // Check place-pool cache first
@@ -34,7 +32,7 @@ export async function searchCandidatePlaces(
     const dbPlaces = await db
       .select()
       .from(places)
-      .where(and(eq(places.city, city), isNotNull(places.embedding)))
+      .where(and(eq(places.city, city), isNotNull(places.embedding)));
 
     pool = dbPlaces.map((r) => ({
       id: r.id,

@@ -1,7 +1,9 @@
 import { db, places } from '@daydrift/db';
 import { createEmbedPlaceQueue } from '@daydrift/queue';
+import { and, eq, isNull } from 'drizzle-orm';
 
-import { mapOverpassToPlace } from './mapping.js';
+import { capByCategory, mapOverpassToPlace, placeEmbeddingText } from './mapping.js';
+import type { PlaceInsert } from './mapping.js';
 import { fetchPlacesFromOverpass, type BoundingBox } from './overpass.js';
 
 export interface CityDefinition {
@@ -9,44 +11,60 @@ export interface CityDefinition {
   bbox: BoundingBox;
 }
 
-export async function seedCity(city: CityDefinition): Promise<number> {
-  console.log(`[seed] Fetching places for ${city.name} from Overpass...`);
+export interface SeedResult {
+  fetched: number;
+  kept: number;
+  inserted: number;
+  embeddingJobs: number;
+}
 
-  const osmPlaces = await fetchPlacesFromOverpass(city.bbox);
-  console.log(`[seed] Fetched ${osmPlaces.length} places from Overpass`);
+const INSERT_CHUNK = 500;
 
-  const mappedPlaces = osmPlaces
-    .map((osm) => mapOverpassToPlace(osm, city.name))
-    .filter((p): p is NonNullable<typeof p> => p !== null);
+/**
+ * Fetch a city's POIs from Overpass, insert the new ones, and enqueue an embedding job for
+ * every place in the city that still lacks a vector. Safe to re-run: existing places are
+ * skipped (unique osm_id + city) and interrupted embedding runs are picked back up.
+ */
+export async function seedCity(city: CityDefinition): Promise<SeedResult> {
+  const cityKey = city.name.trim().toLowerCase();
 
-  console.log(`[seed] Mapped ${mappedPlaces.length} valid places`);
+  const fetched = await fetchPlacesFromOverpass(city.bbox);
+  const kept = capByCategory(fetched.flatMap((osm) => mapOverpassToPlace(osm, city.name) ?? []));
 
-  if (mappedPlaces.length === 0) {
-    console.warn('[seed] No valid places to insert');
-    return 0;
+  let inserted = 0;
+  for (let i = 0; i < kept.length; i += INSERT_CHUNK) {
+    const rows: PlaceInsert[] = kept.slice(i, i + INSERT_CHUNK);
+    const result = await db
+      .insert(places)
+      .values(rows)
+      .onConflictDoNothing({ target: [places.osmId, places.city] })
+      .returning({ id: places.id });
+    inserted += result.length;
   }
 
-  // Insert places (Drizzle handles conflict on unique osmId+city)
-  const inserted = await db
-    .insert(places)
-    .values(mappedPlaces)
-    .onConflictDoNothing({ target: [places.osmId, places.city] })
-    .returning({ id: places.id, name: places.name });
+  const pending = await db
+    .select({
+      id: places.id,
+      name: places.name,
+      category: places.category,
+      description: places.description,
+      tags: places.tags,
+    })
+    .from(places)
+    .where(and(eq(places.city, cityKey), isNull(places.embedding)));
 
-  console.log(`[seed] Inserted ${inserted.length} new places`);
-
-  // Enqueue embedding jobs
   const queue = createEmbedPlaceQueue();
-  for (const place of inserted) {
-    const matchingPlace = mappedPlaces.find((p) => p.name === place.name);
-    if (matchingPlace) {
-      const text = `${matchingPlace.name} ${matchingPlace.category} ${matchingPlace.description || ''} ${Object.values(matchingPlace.tags).join(' ')}`;
-      await queue.add('embed', { placeId: place.id, text });
-    }
+  try {
+    await queue.addBulk(
+      pending.map((p) => ({
+        name: 'embed',
+        data: { placeId: p.id, text: placeEmbeddingText(p) },
+        opts: { jobId: `embed-${p.id}` },
+      })),
+    );
+  } finally {
+    await queue.close();
   }
 
-  console.log(`[seed] Enqueued ${inserted.length} embedding jobs`);
-  await queue.close();
-
-  return inserted.length;
+  return { fetched: fetched.length, kept: kept.length, inserted, embeddingJobs: pending.length };
 }

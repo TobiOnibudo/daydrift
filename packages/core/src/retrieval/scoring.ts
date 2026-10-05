@@ -11,10 +11,7 @@ export interface ScoredPlace {
  * Score vector-ordered places: base score falls linearly with vector rank
  * (1 for the closest match), plus a lexical boost per matched interest term.
  */
-export function scoreWithLexicalBoost(
-  vectorOrdered: Place[],
-  interests: string[],
-): ScoredPlace[] {
+export function scoreWithLexicalBoost(vectorOrdered: Place[], interests: string[]): ScoredPlace[] {
   const terms = interests.map((i) => i.trim().toLowerCase()).filter(Boolean);
   const total = vectorOrdered.length;
 

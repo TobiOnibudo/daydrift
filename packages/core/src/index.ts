@@ -8,3 +8,4 @@ export * from './prompt.js';
 export * from './schemas.js';
 export * from './seeding/seed-city.js';
 export * from './seeding/embed-place.js';
+export * from './seeding/mapping.js';

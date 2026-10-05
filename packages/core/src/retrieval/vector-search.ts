@@ -1,14 +1,9 @@
-
 import { embed } from '@daydrift/ai';
 import { db, places } from '@daydrift/db';
 import type { Place } from '@daydrift/types';
 import { sql } from 'drizzle-orm';
 
-export async function vectorSearch(
-  query: string,
-  city: string,
-  limit: number,
-): Promise<Place[]> {
+export async function vectorSearch(query: string, city: string, limit: number): Promise<Place[]> {
   // Generate query embedding
   const queryEmbedding = await embed(query);
 
@@ -16,9 +11,7 @@ export async function vectorSearch(
   const results = await db
     .select()
     .from(places)
-    .where(
-      sql`${places.city} = ${city.toLowerCase()} AND ${places.embedding} IS NOT NULL`,
-    )
+    .where(sql`${places.city} = ${city.toLowerCase()} AND ${places.embedding} IS NOT NULL`)
     .orderBy(sql`${places.embedding} <=> ${JSON.stringify(queryEmbedding)}`)
     .limit(limit);
 

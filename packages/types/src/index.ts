@@ -17,9 +17,6 @@ export const PlaceCategorySchema = z.enum([
   'viewpoint',
   'theatre',
   'landmark',
-  'historic',
-  'entertainment',
-  'shop',
 ]);
 export type PlaceCategory = z.infer<typeof PlaceCategorySchema>;
 
