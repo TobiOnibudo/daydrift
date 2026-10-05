@@ -45,12 +45,21 @@ export default {
         soft: '0 1px 2px hsl(var(--foreground) / 0.06), 0 8px 24px -12px hsl(var(--foreground) / 0.18)',
       },
       keyframes: {
+        caret: { to: { visibility: 'hidden' } },
+        topo: {
+          from: { transform: 'rotate(0deg) scale(1.05)' },
+          to: { transform: 'rotate(360deg) scale(1.05)' },
+        },
         drift: {
           '0%, 100%': { transform: 'translate3d(0,0,0) scale(1)' },
           '50%': { transform: 'translate3d(3%, -4%, 0) scale(1.08)' },
         },
       },
-      animation: { drift: 'drift 18s ease-in-out infinite' },
+      animation: {
+        drift: 'drift 18s ease-in-out infinite',
+        topo: 'topo 90s linear infinite',
+        caret: 'caret 1s steps(2, start) infinite',
+      },
     },
   },
   plugins: [],

@@ -46,7 +46,7 @@ export function TripGenerationView({ tripId, onRetry, retrying = false }: TripGe
   return (
     <div className="grid gap-8 lg:grid-cols-[18rem_1fr]">
       <Card className="h-fit space-y-6 p-6">
-        <RouteTrace loop className="opacity-90" />
+        <RouteTrace loop traveler className="opacity-90" />
         <ProgressStepper step={stream.step} done={stream.phase === 'complete'} />
         {slow && (
           <p className="text-muted-foreground text-xs">
@@ -60,7 +60,7 @@ export function TripGenerationView({ tripId, onRetry, retrying = false }: TripGe
           <h2 className="text-muted-foreground text-sm font-medium uppercase tracking-wider">
             From your guide
           </h2>
-          <StreamingNarrative text={stream.narrative} />
+          <StreamingNarrative text={stream.narrative} streaming={stream.phase === 'streaming'} />
         </Card>
 
         <div className="space-y-3" role="status" aria-label="Preparing your itinerary">

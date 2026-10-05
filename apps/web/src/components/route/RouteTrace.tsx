@@ -1,4 +1,5 @@
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useAnimationFrame, useReducedMotion } from 'framer-motion';
+import { useRef } from 'react';
 
 import { cn } from '../../lib/utils';
 
@@ -6,33 +7,56 @@ interface RouteTraceProps {
   className?: string;
   /** Repeat the drawing animation (used while a trip is being generated). */
   loop?: boolean;
+  /** A small traveler that wanders along the route forever. */
+  traveler?: boolean;
 }
 
-const PATH = 'M 20 150 C 90 150, 90 60, 170 70 S 260 150, 330 90 S 400 20, 460 40';
-const STOPS: Array<[number, number]> = [
+export const TRACE_PATH = 'M 20 150 C 90 150, 90 60, 170 70 S 260 150, 330 90 S 400 20, 460 40';
+export const TRACE_STOPS: Array<[number, number]> = [
   [20, 150],
   [170, 70],
   [330, 90],
   [460, 40],
 ];
+export const TRACE_VIEWBOX = { width: 480, height: 180 };
+
+const LAP_SECONDS = 9;
 
 /**
- * The Daydrift signature: a dashed route line drawing itself between numbered waypoints.
- * Decorative only (aria-hidden); static when the user prefers reduced motion.
+ * The Daydrift signature: a dashed route line drawing itself between numbered waypoints, with an
+ * optional traveler drifting along it. Decorative only (aria-hidden); static when the user
+ * prefers reduced motion.
  */
-export function RouteTrace({ className, loop = false }: RouteTraceProps) {
+export function RouteTrace({ className, loop = false, traveler = false }: RouteTraceProps) {
   const reduce = useReducedMotion();
   const animate = !reduce;
+  const pathRef = useRef<SVGPathElement>(null);
+  const dotRef = useRef<SVGGElement>(null);
+  const length = useRef(0);
+
+  // Move the traveler by writing straight to the DOM, so it costs no React renders.
+  useAnimationFrame((time) => {
+    const path = pathRef.current;
+    const dot = dotRef.current;
+    if (!traveler || !animate || !path || !dot) return;
+    length.current ||= path.getTotalLength();
+    // Ease in and out of each lap so the traveler lingers at the ends like it is sightseeing.
+    const t = (time / 1000 / LAP_SECONDS) % 1;
+    const eased = 0.5 - Math.cos(t * Math.PI * 2) / 2;
+    const point = path.getPointAtLength(eased * length.current);
+    dot.setAttribute('transform', `translate(${point.x} ${point.y})`);
+  });
 
   return (
     <svg
-      viewBox="0 0 480 180"
+      viewBox={`0 0 ${TRACE_VIEWBOX.width} ${TRACE_VIEWBOX.height}`}
       aria-hidden="true"
       className={cn('text-primary h-auto w-full', className)}
       fill="none"
     >
       <motion.path
-        d={PATH}
+        ref={pathRef}
+        d={TRACE_PATH}
         stroke="currentColor"
         strokeWidth="3"
         strokeLinecap="round"
@@ -46,7 +70,7 @@ export function RouteTrace({ className, loop = false }: RouteTraceProps) {
           repeatDelay: 1,
         }}
       />
-      {STOPS.map(([x, y], i) => (
+      {TRACE_STOPS.map(([x, y], i) => (
         <motion.g
           key={i}
           initial={animate ? { opacity: 0, scale: 0.4 } : false}
@@ -70,6 +94,14 @@ export function RouteTrace({ className, loop = false }: RouteTraceProps) {
           </text>
         </motion.g>
       ))}
+      {traveler && animate && (
+        <g ref={dotRef} transform="translate(20 150)">
+          <circle r="11" className="fill-secondary/20">
+            <animate attributeName="r" values="8;13;8" dur="2.4s" repeatCount="indefinite" />
+          </circle>
+          <circle r="5" className="fill-secondary stroke-card" strokeWidth="2" />
+        </g>
+      )}
     </svg>
   );
 }
