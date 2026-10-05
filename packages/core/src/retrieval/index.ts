@@ -1,10 +1,12 @@
-import type { CreateTripInput, Place } from '@daydrift/types';
 import { db, places } from '@daydrift/db';
+import type { CreateTripInput, Place } from '@daydrift/types';
 import { and, eq, isNotNull } from 'drizzle-orm';
 
-import { buildSearchQuery } from './query-builder.js';
-import { vectorSearch } from './vector-search.js';
 import { getCityPlacePool, setCityPlacePool } from './cache.js';
+import { selectDiverseCandidates } from './diversity.js';
+import { buildSearchQuery } from './query-builder.js';
+import { scoreWithLexicalBoost } from './scoring.js';
+import { vectorSearch } from './vector-search.js';
 
 /**
  * Retrieve + score + diversify candidate places for a trip request.
@@ -54,7 +56,7 @@ export async function searchCandidatePlaces(
   const query = buildSearchQuery(input);
 
   // Vector search over pool
-  const results = await vectorSearch(query, city, 50); // Top 50 for scoring
+  const results = await vectorSearch(query, city, 50);
 
-  return results;
+  return selectDiverseCandidates(scoreWithLexicalBoost(results, input.interests), 15);
 }

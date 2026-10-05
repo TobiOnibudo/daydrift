@@ -1,8 +1,8 @@
-import { sql } from 'drizzle-orm';
 
 import { embed } from '@daydrift/ai';
 import { db, places } from '@daydrift/db';
 import type { Place } from '@daydrift/types';
+import { sql } from 'drizzle-orm';
 
 export async function vectorSearch(
   query: string,

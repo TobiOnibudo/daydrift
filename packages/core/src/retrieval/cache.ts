@@ -1,7 +1,7 @@
-import { Redis } from 'ioredis';
 
 import { config } from '@daydrift/config';
 import type { Place } from '@daydrift/types';
+import { Redis } from 'ioredis';
 
 const redis = new Redis(config.redis.url);
 
