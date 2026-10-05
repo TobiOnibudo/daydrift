@@ -1,13 +1,17 @@
-import { Bike, Car, ExternalLink, Footprints, Route } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { Bike, Car, ExternalLink, Footprints, Plus, Route } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
 
+import type { TripEditor } from '../hooks/useTripEditor';
+import { MAX_STOPS } from '../lib/editing';
 import { googleRouteUrl } from '../lib/maps-links';
 import type { SharedApiTrip } from '../lib/types';
 
 import { GuideNote } from './GuideNote';
 import { ItineraryList } from './ItineraryList';
+import { SuggestionsPanel } from './SuggestionsPanel';
 import { TripMap } from './TripMap';
 import { Badge } from './ui/badge';
+import { Button } from './ui/button';
 
 const MODE = {
   walking: { label: 'On foot', Icon: Footprints },
@@ -32,6 +36,8 @@ interface TripResultViewProps {
   actions?: ReactNode;
   /** A link back to the trip list, placed above the title. */
   back?: ReactNode;
+  /** Makes the trip editable. Leave out for read-only views such as shared links. */
+  editor?: TripEditor;
 }
 
 /**
@@ -39,7 +45,7 @@ interface TripResultViewProps {
  * the left, a full-height map on the right. On phones the map pins to the top while the
  * itinerary scrolls beneath it, so the two always stay together.
  */
-export function TripResultView({ trip, actions, back }: TripResultViewProps) {
+export function TripResultView({ trip, actions, back, editor }: TripResultViewProps) {
   const { label, Icon } = MODE[trip.travelMode];
   const hasRoute = trip.routeGeojson !== null && trip.routeGeojson !== undefined;
   const googleUrl = googleRouteUrl(trip.legs, trip.travelMode);
@@ -47,6 +53,22 @@ export function TripResultView({ trip, actions, back }: TripResultViewProps) {
   // One selection shared by the list and the map, so each drives the other.
   const [activeId, setActiveId] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  // null = closed; otherwise adding a stop, or swapping out the stop with this id.
+  const [picker, setPicker] = useState<{ swapId: string | null } | null>(null);
+
+  // A stop that was removed can no longer be the selection.
+  useEffect(() => {
+    if (activeId && !trip.legs.some((leg) => leg.placeId === activeId)) setActiveId(null);
+  }, [activeId, trip.legs]);
+
+  const swapping = picker?.swapId ? trip.legs.find((l) => l.placeId === picker.swapId) : undefined;
+
+  const pick = (placeId: string) => {
+    if (!editor || !picker) return;
+    if (picker.swapId) editor.swap(picker.swapId, placeId);
+    else editor.add(placeId);
+    setPicker(null);
+  };
 
   return (
     <article className="lg:fit-screen flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,27rem)_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:gap-x-6 lg:gap-y-3">
@@ -112,7 +134,40 @@ export function TripResultView({ trip, actions, back }: TripResultViewProps) {
           hoveredId={hoveredId}
           onSelect={setActiveId}
           onHover={setHoveredId}
+          editor={editor}
+          onSwap={(swapId) => setPicker({ swapId })}
         />
+
+        {editor && (
+          <>
+            <div className="mt-3 flex items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={editor.busy || !editor.canAdd}
+                onClick={() => setPicker({ swapId: null })}
+              >
+                <Plus aria-hidden="true" /> Add a stop
+              </Button>
+              {!editor.canAdd && (
+                <span className="text-muted-foreground text-xs">
+                  A trip can have up to {MAX_STOPS} stops.
+                </span>
+              )}
+            </div>
+            {picker && (
+              <SuggestionsPanel
+                key={picker.swapId ?? 'add'}
+                tripId={trip.id}
+                replacing={swapping?.name ?? null}
+                busy={editor.busy}
+                onPick={pick}
+                onClose={() => setPicker(null)}
+              />
+            )}
+          </>
+        )}
       </div>
     </article>
   );

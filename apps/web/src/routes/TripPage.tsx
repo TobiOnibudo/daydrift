@@ -1,5 +1,5 @@
 import { Link2, Link2Off, RotateCcw, Trash2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -9,6 +9,7 @@ import { TripResultView } from '../components/TripResultView';
 import { ErrorState } from '../components/states';
 import { Button } from '../components/ui/button';
 import { Skeleton } from '../components/ui/skeleton';
+import { useTripEditor } from '../hooks/useTripEditor';
 import { useDeleteTrip, useRegenerateTrip, useShareTrip, useTrip } from '../hooks/useTrips';
 import { ApiError } from '../lib/api';
 import { describeError } from '../lib/errors';
@@ -79,6 +80,20 @@ function TripActions({ trip, onRegenerate }: { trip: ApiTrip; onRegenerate: () =
       </Button>
     </>
   );
+}
+
+/** The finished trip with manual editing switched on. */
+function EditableTrip({
+  trip,
+  actions,
+  back,
+}: {
+  trip: ApiTrip;
+  actions: ReactNode;
+  back: ReactNode;
+}) {
+  const editor = useTripEditor(trip);
+  return <TripResultView trip={trip} actions={actions} back={back} editor={editor} />;
 }
 
 export function TripPage() {
@@ -156,7 +171,7 @@ export function TripPage() {
           />
         )
       ) : trip.status === 'complete' ? (
-        <TripResultView
+        <EditableTrip
           trip={trip}
           back={back}
           actions={<TripActions trip={trip} onRegenerate={handleRegenerate} />}

@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
+import type { TripEditor } from '../hooks/useTripEditor';
 import type { TripLeg } from '../lib/types';
 
 import { ItineraryList } from './ItineraryList';
@@ -163,5 +164,59 @@ describe('ItineraryList one-line descriptions', () => {
       />,
     );
     expect(screen.getByText('Old Trip Stop')).toBeInTheDocument();
+  });
+});
+
+describe('ItineraryList editing', () => {
+  const makeEditor = (over: Partial<TripEditor> = {}): TripEditor => ({
+    busy: false,
+    canRemove: true,
+    canAdd: true,
+    move: vi.fn(),
+    remove: vi.fn(),
+    add: vi.fn(),
+    swap: vi.fn(),
+    ...over,
+  });
+
+  it('shows no edit controls without an editor, or before a stop is selected', () => {
+    setup({ activeId: 'a' });
+    expect(screen.queryByRole('group', { name: /edit/i })).not.toBeInTheDocument();
+
+    setup({ editor: makeEditor() });
+    expect(screen.queryByRole('button', { name: /^Remove/ })).not.toBeInTheDocument();
+  });
+
+  it('moves, swaps and removes the selected stop', async () => {
+    const editor = makeEditor();
+    const onSwap = vi.fn();
+    const { user } = setup({ activeId: 'b', editor, onSwap });
+
+    await user.click(screen.getByRole('button', { name: 'Move High Park up' }));
+    expect(editor.move).toHaveBeenCalledWith('b', -1);
+
+    await user.click(screen.getByRole('button', { name: 'Swap High Park for another place' }));
+    expect(onSwap).toHaveBeenCalledWith('b');
+
+    await user.click(screen.getByRole('button', { name: 'Remove High Park' }));
+    expect(editor.remove).toHaveBeenCalledWith('b');
+  });
+
+  it('disables moves at the ends of the list', () => {
+    setup({ activeId: 'a', editor: makeEditor() });
+    expect(screen.getByRole('button', { name: 'Move Royal Ontario Museum up' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Move Royal Ontario Museum down' })).toBeEnabled();
+  });
+
+  it('disables removing at the minimum and everything while a save is in flight', () => {
+    setup({ activeId: 'a', editor: makeEditor({ canRemove: false }) });
+    expect(screen.getByRole('button', { name: 'Remove Royal Ontario Museum' })).toBeDisabled();
+  });
+
+  it('disables every edit while saving', () => {
+    setup({ activeId: 'b', editor: makeEditor({ busy: true }) });
+    for (const name of [/^Move .* up$/, /^Move .* down$/, /^Swap /, /^Remove /]) {
+      expect(screen.getByRole('button', { name })).toBeDisabled();
+    }
   });
 });
