@@ -20,7 +20,8 @@
     "prepare": "husky",
     "eval": "pnpm --filter @daydrift/core eval",
     "test:integration": "pnpm --filter @daydrift/core test:integration",
-    "e2e": "pnpm build && pnpm --filter @daydrift/e2e e2e"
+    "e2e": "pnpm build && pnpm --filter @daydrift/e2e e2e",
+    "load": "pnpm build && pnpm --filter @daydrift/e2e load"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.0.0",

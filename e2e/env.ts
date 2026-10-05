@@ -35,6 +35,8 @@ export const serverEnv = {
   EMBEDDING_PROVIDER: 'mock',
   EMBEDDING_MODEL: 'nomic-embed-text',
   LLM_TIMEOUT_MS: '30000',
+  // The suites and the load test intentionally exceed production request rates.
+  RATE_LIMIT_MAX: '100000000',
   // Nothing listens here, so routing fails fast and trips use the straight-line fallback.
   OSRM_BASE_URL: 'http://127.0.0.1:9',
 } satisfies NodeJS.ProcessEnv;
