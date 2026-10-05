@@ -151,3 +151,21 @@ export function useSuggestions(tripId: string, query: string, enabled = true) {
     staleTime: 60_000,
   });
 }
+
+/**
+ * Ask the guide to revise a finished trip. The trip flips to pending straight away so the page can
+ * show progress; its current itinerary stays on the server until the revision succeeds.
+ */
+export function useRefineTrip(tripId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (instruction: string) =>
+      fetchJson<CreatedTrip>(`/trips/${tripId}/refine`, { method: 'POST', json: { instruction } }),
+    onSuccess: () => {
+      queryClient.setQueryData<ApiTrip>(tripKey(tripId), (old) =>
+        old ? { ...old, status: 'pending' } : old,
+      );
+      return queryClient.invalidateQueries({ queryKey: ['trips'] });
+    },
+  });
+}

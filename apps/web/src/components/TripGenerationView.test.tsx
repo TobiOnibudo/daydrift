@@ -66,3 +66,34 @@ describe('TripGenerationView', () => {
     expect(screen.getByRole('button', { name: /try again/i })).toBeDisabled();
   });
 });
+
+describe('TripGenerationView while revising', () => {
+  it('says the guide is rethinking the day', () => {
+    renderWithProviders(<TripGenerationView tripId="t1" onRetry={vi.fn()} revising />);
+    expect(screen.getByText(/rethinking the day/i)).toBeInTheDocument();
+  });
+
+  it('reports a failure instead of offering to replan, since the trip is unchanged', () => {
+    const onFinished = vi.fn();
+    renderWithProviders(
+      <TripGenerationView tripId="t1" onRetry={vi.fn()} revising onFinished={onFinished} />,
+    );
+    act(() => MockEventSource.last.emit('failed', { message: 'Unchanged.' }));
+
+    expect(onFinished).toHaveBeenCalledOnce();
+    expect(onFinished).toHaveBeenCalledWith({ ok: false, message: 'Unchanged.' });
+    expect(screen.queryByRole('button', { name: /try again/i })).not.toBeInTheDocument();
+  });
+
+  it('reports success once when the stream completes', () => {
+    const onFinished = vi.fn();
+    const { rerender } = renderWithProviders(
+      <TripGenerationView tripId="t1" onRetry={vi.fn()} revising onFinished={onFinished} />,
+    );
+    act(() => MockEventSource.last.emit('complete', { trip: { id: 't1' } }));
+    rerender(<TripGenerationView tripId="t1" onRetry={vi.fn()} revising onFinished={onFinished} />);
+
+    expect(onFinished).toHaveBeenCalledOnce();
+    expect(onFinished).toHaveBeenCalledWith({ ok: true });
+  });
+});

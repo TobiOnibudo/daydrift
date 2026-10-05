@@ -4,7 +4,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CreateTripPayload } from '../lib/types';
 import { makeQueryClient, mockFetch, wrapper } from '../test/utils';
 
-import { useCities, useCreateTrip, useDeleteTrip, useShareTrip, useTrips } from './useTrips';
+import {
+  useCities,
+  useCreateTrip,
+  useDeleteTrip,
+  useRefineTrip,
+  useShareTrip,
+  useTrips,
+} from './useTrips';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -72,5 +79,39 @@ describe('mutation hooks', () => {
 
     expect(result.current.enable.data).toBe('tok123');
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['trip', 't1'] });
+  });
+});
+
+describe('useRefineTrip', () => {
+  it('posts the note, marks the trip as being worked on, and refreshes the list', async () => {
+    const fetchMock = mockFetch({ tripId: 't1', status: 'pending' }, { status: 202 });
+    const client = makeQueryClient();
+    client.setQueryData(['trip', 't1'], { id: 't1', status: 'complete', legs: [{ placeId: 'a' }] });
+    const invalidate = vi.spyOn(client, 'invalidateQueries');
+    const { result } = renderHook(() => useRefineTrip('t1'), { wrapper: wrapper(client) });
+
+    result.current.mutate("It's raining");
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url).toBe('/api/v1/trips/t1/refine');
+    expect(JSON.parse(init.body)).toEqual({ instruction: "It's raining" });
+    // the itinerary stays in the cache; only its status changes
+    expect(client.getQueryData(['trip', 't1'])).toMatchObject({
+      status: 'pending',
+      legs: [{ placeId: 'a' }],
+    });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['trips'] });
+  });
+
+  it('leaves the trip alone when the guide cannot be reached', async () => {
+    mockFetch({ error: { code: 'CONFLICT', message: 'busy' } }, { status: 409 });
+    const client = makeQueryClient();
+    client.setQueryData(['trip', 't1'], { id: 't1', status: 'complete' });
+    const { result } = renderHook(() => useRefineTrip('t1'), { wrapper: wrapper(client) });
+
+    result.current.mutate('More food');
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(client.getQueryData(['trip', 't1'])).toMatchObject({ status: 'complete' });
   });
 });

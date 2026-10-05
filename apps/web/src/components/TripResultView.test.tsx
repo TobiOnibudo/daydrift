@@ -1,8 +1,10 @@
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import type { TripEditor } from '../hooks/useTripEditor';
 import type { SharedApiTrip } from '../lib/types';
+import { mockFetch, renderWithProviders } from '../test/utils';
 
 // The real map needs a layout engine; here it only matters that the two views share one selection.
 const mapProps = vi.hoisted(() => ({ current: {} as Record<string, unknown> }));
@@ -85,5 +87,75 @@ describe('TripResultView guide note', () => {
   it('omits the note for trips planned before narratives were saved', () => {
     render(<TripResultView trip={trip} />);
     expect(screen.queryByRole('region', { name: 'From your guide' })).not.toBeInTheDocument();
+  });
+});
+
+describe('TripResultView editing', () => {
+  const makeEditor = (over: Partial<TripEditor> = {}): TripEditor => ({
+    busy: false,
+    canRemove: true,
+    canAdd: true,
+    move: vi.fn(),
+    remove: vi.fn(),
+    add: vi.fn(),
+    swap: vi.fn(),
+    ...over,
+  });
+  const places = [{ id: 'p9', name: 'Casa Loma', category: 'landmark', description: null }];
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('is read-only without an editor: no edit controls and no way to ask the guide', () => {
+    renderWithProviders(<TripResultView trip={trip} />);
+    expect(screen.queryByRole('button', { name: /add a stop/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: /ask your guide/i })).not.toBeInTheDocument();
+  });
+
+  it('offers the guide only when it can be asked', () => {
+    renderWithProviders(
+      <TripResultView trip={trip} refine={{ pending: false, submit: vi.fn() }} />,
+    );
+    expect(screen.getByRole('region', { name: /ask your guide/i })).toBeInTheDocument();
+  });
+
+  it('adds a place picked from the suggestions', async () => {
+    mockFetch({ places });
+    const editor = makeEditor();
+    renderWithProviders(<TripResultView trip={trip} editor={editor} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /add a stop/i }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Add Casa Loma' }));
+
+    expect(editor.add).toHaveBeenCalledWith('p9');
+    expect(screen.queryByRole('region', { name: 'Add a stop' })).not.toBeInTheDocument();
+  });
+
+  it('swaps the selected stop for a place picked from the suggestions', async () => {
+    mockFetch({ places });
+    const editor = makeEditor();
+    renderWithProviders(<TripResultView trip={trip} editor={editor} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /Stop 2/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^Swap High Park/ }));
+    expect(screen.getByRole('region', { name: 'Swap out High Park' })).toBeInTheDocument();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Swap in Casa Loma' }));
+    expect(editor.swap).toHaveBeenCalledWith('b', 'p9');
+  });
+
+  it('stops offering additions at the maximum', () => {
+    renderWithProviders(<TripResultView trip={trip} editor={makeEditor({ canAdd: false })} />);
+    expect(screen.getByRole('button', { name: /add a stop/i })).toBeDisabled();
+    expect(screen.getByText(/up to 8 stops/i)).toBeInTheDocument();
+  });
+
+  it('clears the selection when the selected stop is removed', async () => {
+    const editor = makeEditor();
+    const { rerender } = renderWithProviders(<TripResultView trip={trip} editor={editor} />);
+    await userEvent.click(screen.getByRole('button', { name: /Stop 2/ }));
+    expect(screen.getByTestId('map')).toHaveAttribute('data-active', 'b');
+
+    rerender(<TripResultView trip={{ ...trip, legs: trip.legs.slice(0, 1) }} editor={editor} />);
+    expect(screen.getByTestId('map')).toHaveAttribute('data-active', 'null');
   });
 });

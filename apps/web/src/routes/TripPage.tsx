@@ -10,7 +10,13 @@ import { ErrorState } from '../components/states';
 import { Button } from '../components/ui/button';
 import { Skeleton } from '../components/ui/skeleton';
 import { useTripEditor } from '../hooks/useTripEditor';
-import { useDeleteTrip, useRegenerateTrip, useShareTrip, useTrip } from '../hooks/useTrips';
+import {
+  useDeleteTrip,
+  useRefineTrip,
+  useRegenerateTrip,
+  useShareTrip,
+  useTrip,
+} from '../hooks/useTrips';
 import { ApiError } from '../lib/api';
 import { describeError } from '../lib/errors';
 import type { ApiTrip } from '../lib/types';
@@ -93,7 +99,26 @@ function EditableTrip({
   back: ReactNode;
 }) {
   const editor = useTripEditor(trip);
-  return <TripResultView trip={trip} actions={actions} back={back} editor={editor} />;
+  const refine = useRefineTrip(trip.id);
+  const submit = (instruction: string) =>
+    refine.mutate(instruction, {
+      onError: (e) =>
+        toastError(
+          e,
+          e instanceof ApiError && e.status === 409
+            ? 'Your guide is already working on this trip.'
+            : "We couldn't reach your guide. Please try again.",
+        ),
+    });
+  return (
+    <TripResultView
+      trip={trip}
+      actions={actions}
+      back={back}
+      editor={editor}
+      refine={{ pending: refine.isPending, submit }}
+    />
+  );
 }
 
 export function TripPage() {
@@ -114,6 +139,13 @@ export function TripPage() {
             : "We couldn't restart planning. Please try again.",
         ),
     });
+
+  // A revision ends with the trip back on screen: say what happened, since its progress view goes.
+  const handleFinished = (outcome: { ok: true } | { ok: false; message: string }) => {
+    if (!trip || trip.legs.length === 0) return;
+    if (outcome.ok) toast.success('Your guide updated the trip');
+    else toast.error(outcome.message || "We couldn't make that change, so your trip is unchanged.");
+  };
 
   // A malformed id is answered with 400 and an unknown or foreign one with 404: both mean "not yours".
   const notFound = error instanceof ApiError && (error.status === 404 || error.status === 400);
@@ -190,6 +222,9 @@ export function TripPage() {
         <TripGenerationView
           key={attempt}
           tripId={tripId}
+          // A trip that already has stops is being revised, not planned for the first time.
+          revising={trip.legs.length > 0}
+          onFinished={handleFinished}
           onRetry={handleRegenerate}
           retrying={regenerate.isPending}
         />

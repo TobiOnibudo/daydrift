@@ -1,5 +1,5 @@
 import { RotateCcw } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useTripStream } from '../hooks/useTripStream';
 
@@ -15,12 +15,22 @@ interface TripGenerationViewProps {
   tripId: string;
   onRetry: () => void;
   retrying?: boolean;
+  /** The guide is revising a finished trip, so a failure leaves the trip as it was. */
+  revising?: boolean;
+  /** Called once when the stream ends, so the page can tell the person how it went. */
+  onFinished?: (outcome: { ok: true } | { ok: false; message: string }) => void;
 }
 
 const SLOW_HINT_AFTER_MS = 20_000;
 
 /** Maps the SSE stream to one view (docs/05 §4): stepper, live narrative, and skeletons until done. */
-export function TripGenerationView({ tripId, onRetry, retrying = false }: TripGenerationViewProps) {
+export function TripGenerationView({
+  tripId,
+  onRetry,
+  retrying = false,
+  revising = false,
+  onFinished,
+}: TripGenerationViewProps) {
   const stream = useTripStream(tripId);
   const [slow, setSlow] = useState(false);
 
@@ -29,7 +39,16 @@ export function TripGenerationView({ tripId, onRetry, retrying = false }: TripGe
     return () => clearTimeout(timer);
   }, [tripId]);
 
-  if (stream.phase === 'failed') {
+  const { phase, error } = stream;
+  // The latest callback is read when the stream ends, so a new function identity never re-reports.
+  const finished = useRef(onFinished);
+  finished.current = onFinished;
+  useEffect(() => {
+    if (phase === 'complete') finished.current?.({ ok: true });
+    if (phase === 'failed') finished.current?.({ ok: false, message: error ?? '' });
+  }, [phase, error]);
+
+  if (phase === 'failed' && !revising) {
     return (
       <ErrorState
         title="We couldn't finish planning this trip"
@@ -58,7 +77,7 @@ export function TripGenerationView({ tripId, onRetry, retrying = false }: TripGe
       <div className="space-y-6">
         <Card className="space-y-3 p-6">
           <h2 className="text-muted-foreground text-sm font-medium uppercase tracking-wider">
-            From your guide
+            {revising ? 'Your guide is rethinking the day' : 'From your guide'}
           </h2>
           <StreamingNarrative text={stream.narrative} streaming={stream.phase === 'streaming'} />
         </Card>

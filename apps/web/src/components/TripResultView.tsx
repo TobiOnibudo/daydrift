@@ -8,6 +8,7 @@ import type { SharedApiTrip } from '../lib/types';
 
 import { GuideNote } from './GuideNote';
 import { ItineraryList } from './ItineraryList';
+import { RefinePanel } from './RefinePanel';
 import { SuggestionsPanel } from './SuggestionsPanel';
 import { TripMap } from './TripMap';
 import { Badge } from './ui/badge';
@@ -38,6 +39,8 @@ interface TripResultViewProps {
   back?: ReactNode;
   /** Makes the trip editable. Leave out for read-only views such as shared links. */
   editor?: TripEditor;
+  /** Lets the person tell the guide what changed. Leave out for read-only views. */
+  refine?: { pending: boolean; submit: (instruction: string) => void };
 }
 
 /**
@@ -45,7 +48,7 @@ interface TripResultViewProps {
  * the left, a full-height map on the right. On phones the map pins to the top while the
  * itinerary scrolls beneath it, so the two always stay together.
  */
-export function TripResultView({ trip, actions, back, editor }: TripResultViewProps) {
+export function TripResultView({ trip, actions, back, editor, refine }: TripResultViewProps) {
   const { label, Icon } = MODE[trip.travelMode];
   const hasRoute = trip.routeGeojson !== null && trip.routeGeojson !== undefined;
   const googleUrl = googleRouteUrl(trip.legs, trip.travelMode);
@@ -126,7 +129,10 @@ export function TripResultView({ trip, actions, back, editor }: TripResultViewPr
       </div>
 
       <div className="min-h-0 lg:col-start-1 lg:row-start-2 lg:overflow-y-auto lg:overscroll-contain lg:px-1 lg:py-2 lg:pr-3">
-        <GuideNote text={trip.narrative} className="mb-5" />
+        <GuideNote text={trip.narrative} className="mb-3" />
+        {refine && (
+          <RefinePanel pending={refine.pending} onSubmit={refine.submit} className="mb-5" />
+        )}
         <ItineraryList
           legs={trip.legs}
           travelMode={trip.travelMode}
