@@ -1,5 +1,6 @@
+import { useReducedMotion } from 'framer-motion';
 import { Bike, Car, Footprints, Route } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 
 import type { SharedApiTrip } from '../lib/types';
 
@@ -32,6 +33,23 @@ export function TripResultView({ trip, actions }: TripResultViewProps) {
   const { label, Icon } = MODE[trip.travelMode];
   const hasRoute = trip.routeGeojson !== null && trip.routeGeojson !== undefined;
 
+  // One selection shared by the list and the map, so each drives the other.
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
+
+  // On narrow screens the map sits below the list, so bring it into view after choosing a stop.
+  const selectFromList = (placeId: string | null) => {
+    setActiveId(placeId);
+    if (placeId && window.matchMedia('(max-width: 1023px)').matches) {
+      mapRef.current?.scrollIntoView({
+        block: 'center',
+        behavior: reduceMotion ? 'auto' : 'smooth',
+      });
+    }
+  };
+
   return (
     <article className="space-y-8">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -63,9 +81,22 @@ export function TripResultView({ trip, actions }: TripResultViewProps) {
       </header>
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,22rem)_1fr]">
-        <ItineraryList legs={trip.legs} />
-        <div className="lg:sticky lg:top-6 lg:self-start">
-          <TripMap legs={trip.legs} routeGeojson={trip.routeGeojson} />
+        <ItineraryList
+          legs={trip.legs}
+          activeId={activeId}
+          hoveredId={hoveredId}
+          onSelect={selectFromList}
+          onHover={setHoveredId}
+        />
+        <div ref={mapRef} className="lg:sticky lg:top-6 lg:self-start">
+          <TripMap
+            legs={trip.legs}
+            routeGeojson={trip.routeGeojson}
+            activeId={activeId}
+            hoveredId={hoveredId}
+            onSelect={setActiveId}
+            onHover={setHoveredId}
+          />
         </div>
       </div>
     </article>

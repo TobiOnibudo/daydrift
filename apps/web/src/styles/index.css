@@ -110,6 +110,22 @@
   box-shadow: 0 2px 8px hsl(var(--foreground) / 0.35);
 }
 
+.daydrift-marker span {
+  transition:
+    transform 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.daydrift-marker span.is-hover {
+  transform: scale(1.18);
+}
+
+.daydrift-marker span.is-active {
+  transform: scale(1.32);
+  background: hsl(var(--secondary));
+  border-color: hsl(var(--accent));
+}
+
 .leaflet-container {
   font-family: 'Inter Variable', sans-serif;
   background: hsl(var(--muted));
