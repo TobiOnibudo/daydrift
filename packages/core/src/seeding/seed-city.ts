@@ -2,6 +2,8 @@ import { db, places } from '@daydrift/db';
 import { createEmbedPlaceQueue } from '@daydrift/queue';
 import { and, eq, isNull } from 'drizzle-orm';
 
+import { invalidateCityPlacePool } from '../retrieval/cache.js';
+
 import { capByCategory, mapOverpassToPlace, placeEmbeddingText } from './mapping.js';
 import type { PlaceInsert } from './mapping.js';
 import { fetchPlacesFromOverpass, type BoundingBox } from './overpass.js';
@@ -65,6 +67,8 @@ export async function seedCity(city: CityDefinition): Promise<SeedResult> {
   } finally {
     await queue.close();
   }
+
+  await invalidateCityPlacePool(cityKey);
 
   return { fetched: fetched.length, kept: kept.length, inserted, embeddingJobs: pending.length };
 }

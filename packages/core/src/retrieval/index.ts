@@ -1,60 +1,36 @@
-import { db, places } from '@daydrift/db';
+import { embed } from '@daydrift/ai';
 import type { CreateTripInput, Place } from '@daydrift/types';
-import { and, eq, isNotNull } from 'drizzle-orm';
 
 import { getCityPlacePool, setCityPlacePool } from './cache.js';
 import { selectDiverseCandidates } from './diversity.js';
 import { buildSearchQuery } from './query-builder.js';
 import { scoreWithLexicalBoost } from './scoring.js';
-import { vectorSearch } from './vector-search.js';
+import { loadCityPool, vectorSearch } from './vector-search.js';
+
+export const VECTOR_TOP_K = 50;
+export const MIN_CANDIDATE_POOL = 20;
+export const CANDIDATE_LIMIT = 15;
 
 /**
- * Retrieve + score + diversify candidate places for a trip request.
- *
- * Pipeline (docs/03-rag-pipeline.md §3–4):
- *   1. Build a query string from normalized city + interests + duration/mode.
- *   2. embed(query) via @daydrift/ai (dimension = EMBEDDING_DIM).
- *   3. HNSW vector top-k over the per-city pool (`embedding <=> queryVec`).
- *   4. JS re-rank: vector distance + ILIKE interest boost (TEXT_MATCH_SCORE_BOOST).
- *   5. Fill to MIN_CANDIDATE_POOL if vector results are thin.
- *   6. selectDiverseCandidates → top 15 spread across categories/areas.
- *
- * @returns up to 15 diverse candidate places.
+ * Retrieve, score and diversify candidate places for a trip request (docs/03 §3-4):
+ * embed the query, HNSW top-k in the city, top up from the cached city pool when results
+ * are thin, lexical-boost re-rank, then pick up to 15 spread across categories and areas.
  */
 export async function searchCandidatePlaces(input: CreateTripInput): Promise<Place[]> {
-  const city = input.city.toLowerCase();
+  const queryEmbedding = await embed(buildSearchQuery(input));
+  let results = await vectorSearch(queryEmbedding, input.city, VECTOR_TOP_K);
 
-  // Check place-pool cache first
-  let pool = await getCityPlacePool(city);
-
-  if (!pool) {
-    // Cache miss: fetch all city places from DB
-    const dbPlaces = await db
-      .select()
-      .from(places)
-      .where(and(eq(places.city, city), isNotNull(places.embedding)));
-
-    pool = dbPlaces.map((r) => ({
-      id: r.id,
-      osmId: r.osmId,
-      name: r.name,
-      city: r.city,
-      category: r.category as Place['category'],
-      description: r.description,
-      lat: r.lat,
-      lng: r.lng,
-      tags: r.tags as Record<string, string>,
-      createdAt: r.createdAt,
-    }));
-
-    await setCityPlacePool(city, pool);
+  if (results.length < MIN_CANDIDATE_POOL) {
+    let pool = await getCityPlacePool(input.city);
+    if (!pool) {
+      pool = await loadCityPool(input.city);
+      if (pool.length > 0) await setCityPlacePool(input.city, pool);
+    }
+    const seen = new Set(results.map((p) => p.id));
+    results = [...results, ...pool.filter((p) => !seen.has(p.id))];
   }
 
-  // Build semantic search query
-  const query = buildSearchQuery(input);
-
-  // Vector search over pool
-  const results = await vectorSearch(query, city, 50);
-
-  return selectDiverseCandidates(scoreWithLexicalBoost(results, input.interests), 15);
+  return selectDiverseCandidates(scoreWithLexicalBoost(results, input.interests), CANDIDATE_LIMIT);
 }
+
+export { invalidateCityPlacePool } from './cache.js';

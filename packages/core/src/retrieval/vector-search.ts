@@ -1,30 +1,27 @@
-import { embed } from '@daydrift/ai';
 import { db, places } from '@daydrift/db';
 import type { Place } from '@daydrift/types';
-import { sql } from 'drizzle-orm';
+import { and, cosineDistance, eq, isNotNull } from 'drizzle-orm';
 
-export async function vectorSearch(query: string, city: string, limit: number): Promise<Place[]> {
-  // Generate query embedding
-  const queryEmbedding = await embed(query);
+import { placeColumns } from './columns.js';
 
-  // HNSW cosine distance search
-  const results = await db
-    .select()
+/** Top-`limit` places in `city` by cosine distance to the query vector (served by the HNSW index). */
+export async function vectorSearch(
+  queryEmbedding: number[],
+  city: string,
+  limit: number,
+): Promise<Place[]> {
+  return db
+    .select(placeColumns)
     .from(places)
-    .where(sql`${places.city} = ${city.toLowerCase()} AND ${places.embedding} IS NOT NULL`)
-    .orderBy(sql`${places.embedding} <=> ${JSON.stringify(queryEmbedding)}`)
+    .where(and(eq(places.city, city.trim().toLowerCase()), isNotNull(places.embedding)))
+    .orderBy(cosineDistance(places.embedding, queryEmbedding))
     .limit(limit);
+}
 
-  return results.map((r) => ({
-    id: r.id,
-    osmId: r.osmId,
-    name: r.name,
-    city: r.city,
-    category: r.category as Place['category'],
-    description: r.description,
-    lat: r.lat,
-    lng: r.lng,
-    tags: r.tags as Record<string, string>,
-    createdAt: r.createdAt,
-  }));
+/** Every embedded place in a city, without vectors; the fallback pool for thin results. */
+export async function loadCityPool(city: string): Promise<Place[]> {
+  return db
+    .select(placeColumns)
+    .from(places)
+    .where(and(eq(places.city, city.trim().toLowerCase()), isNotNull(places.embedding)));
 }
