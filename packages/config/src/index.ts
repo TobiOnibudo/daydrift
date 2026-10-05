@@ -50,7 +50,7 @@ const envSchema = z.object({
 
   NOMINATIM_BASE_URL: z.string().default('https://nominatim.openstreetmap.org'),
   OVERPASS_BASE_URL: z.string().default('https://overpass-api.de/api/interpreter'),
-  OSRM_BASE_URL: z.string().default('https://router.project-osrm.org'),
+  OSRM_BASE_URL: z.string().default('https://routing.openstreetmap.de'),
 
   VITE_API_URL: z.string().optional(),
 
