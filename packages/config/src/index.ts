@@ -38,10 +38,12 @@ loadWorkspaceEnv();
  * consumed by packages/db for the `places.embedding` column. See docs/08 and
  * docs/02-data-model.md.
  */
-const MODEL_DIMS: Record<string, number> = {
-  'nomic-embed-text': 768,
-  'text-embedding-3-small': 1536,
-  'text-embedding-3-large': 3072,
+const MODEL_DIMS: Record<string, { dim: number; shortenable: boolean }> = {
+  'nomic-embed-text': { dim: 768, shortenable: false },
+  // OpenAI's text-embedding-3 models accept a smaller `dimensions`, so one schema can serve
+  // both a local 768-dim dev model and the hosted model.
+  'text-embedding-3-small': { dim: 1536, shortenable: true },
+  'text-embedding-3-large': { dim: 3072, shortenable: true },
 };
 
 const providerEnum = z.enum(['ollama', 'openai']);
@@ -82,7 +84,12 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
 });
 
-const env = envSchema.parse(process.env);
+// A blank value (`EMBEDDING_DIM=` in a .env file) means "unset", not an empty string or zero.
+const definedEnv = Object.fromEntries(
+  Object.entries(process.env).filter(([, value]) => value !== undefined && value.trim() !== ''),
+);
+
+const env = envSchema.parse(definedEnv);
 
 const isProd = env.NODE_ENV === 'production';
 
@@ -119,13 +126,16 @@ function resolveEmbeddingDim(): number {
   if (!model) fail('EMBEDDING_MODEL is required to resolve the embedding dimension.');
   const known = MODEL_DIMS[model];
   if (known !== undefined) {
-    if (env.EMBEDDING_DIM !== undefined && env.EMBEDDING_DIM !== known) {
+    const requested = env.EMBEDDING_DIM;
+    if (requested === undefined) return known.dim;
+    const valid = known.shortenable ? requested <= known.dim : requested === known.dim;
+    if (!valid) {
       fail(
-        `EMBEDDING_DIM (${env.EMBEDDING_DIM}) does not match the known dimension ` +
-          `(${known}) for model "${model}".`,
+        `EMBEDDING_DIM (${requested}) is not valid for model "${model}" ` +
+          (known.shortenable ? `(at most ${known.dim}).` : `(must be ${known.dim}).`),
       );
     }
-    return known;
+    return requested;
   }
   if (env.EMBEDDING_DIM === undefined) {
     fail(`EMBEDDING_DIM is required for unknown embedding model "${model}".`);
