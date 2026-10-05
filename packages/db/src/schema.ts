@@ -6,60 +6,119 @@
  * (fixes v1 bug #3). See docs/08-config-env.md.
  */
 import { EMBEDDING_DIM } from '@daydrift/config';
-import { customType, pgTable, uuid, text, real, jsonb, timestamp } from 'drizzle-orm/pg-core';
+import type { PlaceCategory, TripLeg, TripStatus } from '@daydrift/types';
+import {
+  boolean,
+  index,
+  jsonb,
+  pgTable,
+  real,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+  vector,
+} from 'drizzle-orm/pg-core';
 
-/**
- * Lightweight pgvector column type. Full vector read/write support lives in
- * downstream query code; here we only need the correct dimension-typed DDL.
- */
-const vector = customType<{ data: number[]; driverData: string }>({
-  dataType() {
-    return `vector(${EMBEDDING_DIM})`;
-  },
+/** Better Auth tables (shape required by the Drizzle adapter; model keys are singular). */
+export const user = pgTable('user', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  email: text('email').notNull().unique(),
+  emailVerified: boolean('email_verified').notNull().default(false),
+  image: text('image'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const session = pgTable('session', {
+  id: text('id').primaryKey(),
+  expiresAt: timestamp('expires_at').notNull(),
+  token: text('token').notNull().unique(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+});
+
+export const account = pgTable('account', {
+  id: text('id').primaryKey(),
+  accountId: text('account_id').notNull(),
+  providerId: text('provider_id').notNull(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  accessToken: text('access_token'),
+  refreshToken: text('refresh_token'),
+  idToken: text('id_token'),
+  accessTokenExpiresAt: timestamp('access_token_expires_at'),
+  refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
+  scope: text('scope'),
+  password: text('password'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const verification = pgTable('verification', {
+  id: text('id').primaryKey(),
+  identifier: text('identifier').notNull(),
+  value: text('value').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
 /** Per-city corpus of candidate stops with embeddings (docs/02). */
-export const places = pgTable('places', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  name: text('name').notNull(),
-  city: text('city').notNull(),
-  category: text('category').notNull(),
-  description: text('description'),
-  lat: real('lat').notNull(),
-  lng: real('lng').notNull(),
-  osmId: text('osm_id'),
-  tags: jsonb('tags'),
-  embedding: vector('embedding'), // nullable until the embed job completes
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-});
+export const places = pgTable(
+  'places',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: text('name').notNull(),
+    city: text('city').notNull(),
+    category: text('category').$type<PlaceCategory>().notNull(),
+    description: text('description'),
+    lat: real('lat').notNull(),
+    lng: real('lng').notNull(),
+    osmId: text('osm_id'),
+    tags: jsonb('tags').$type<Record<string, string>>(),
+    embedding: vector('embedding', { dimensions: EMBEDDING_DIM }), // null until the embed job completes
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => ({
+    cityIdx: index('places_city_idx').on(t.city),
+    osmIdCityUidx: uniqueIndex('places_osm_id_city_uidx').on(t.osmId, t.city),
+    embeddingHnswIdx: index('places_embedding_hnsw_idx')
+      .using('hnsw', t.embedding.op('vector_cosine_ops'))
+      .with({ m: 16, ef_construction: 64 }),
+  }),
+);
 
 /** Generated itineraries, with async status and an input hash for caching (docs/02). */
-export const trips = pgTable('trips', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id').notNull(),
-  city: text('city'),
-  interests: jsonb('interests'),
-  duration: text('duration'),
-  travelMode: text('travel_mode'),
-  title: text('title'),
-  legs: jsonb('legs'),
-  routeGeojson: jsonb('route_geojson'),
-  totalDistanceKm: real('total_distance_km'),
-  vibeTags: jsonb('vibe_tags'),
-  status: text('status').notNull().default('pending'),
-  inputHash: text('input_hash'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-});
-
-/**
- * Better Auth tables (`user`, `session`, `account`, `verification`) are managed
- * by Better Auth's Drizzle adapter and intentionally not fully defined here.
- * See docs/02-data-model.md — keep model keys singular so the adapter resolves
- * them. The minimal `user` stub below exists only so FKs/types can reference it.
- */
-export const user = pgTable('user', {
-  id: text('id').primaryKey(),
-  email: text('email').notNull(),
-  name: text('name'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-});
+export const trips = pgTable(
+  'trips',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    city: text('city').notNull(),
+    interests: jsonb('interests').$type<string[]>().notNull(),
+    duration: text('duration').notNull(),
+    travelMode: text('travel_mode').notNull(),
+    title: text('title'),
+    legs: jsonb('legs').$type<TripLeg[]>(),
+    routeGeojson: jsonb('route_geojson'),
+    totalDistanceKm: real('total_distance_km'),
+    vibeTags: jsonb('vibe_tags').$type<string[]>(),
+    status: text('status').$type<TripStatus>().notNull().default('pending'),
+    inputHash: text('input_hash').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => ({
+    userIdIdx: index('trips_user_id_idx').on(t.userId),
+    inputHashIdx: index('trips_input_hash_idx').on(t.inputHash),
+  }),
+);
