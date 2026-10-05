@@ -9,3 +9,6 @@ export * from './schemas.js';
 export * from './seeding/seed-city.js';
 export * from './seeding/embed-place.js';
 export * from './seeding/mapping.js';
+export * from './normalization.js';
+export * from './trip-cache.js';
+export { closeRedis, getRedis } from './redis.js';
