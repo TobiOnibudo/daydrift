@@ -1,6 +1,7 @@
 import { useReducedMotion } from 'framer-motion';
 import L, { type LatLngBoundsExpression, type LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import type { Polyline as LeafletPolyline } from 'leaflet';
 import { useEffect, useMemo, useRef } from 'react';
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 
@@ -104,6 +105,28 @@ export function TripMap({
   const path = routePoints ?? stops;
   const bounds = useMemo(() => L.latLngBounds([...path, ...stops]), [path, stops]);
 
+  const reduceMotion = useReducedMotion();
+  const lineRef = useRef<LeafletPolyline | null>(null);
+
+  // Draw the road route in from the first stop to the last. Transform-free: only the dash offset moves.
+  useEffect(() => {
+    const el = lineRef.current?.getElement() as SVGPathElement | undefined;
+    if (!el || !routePoints || reduceMotion || typeof el.getTotalLength !== 'function') return;
+    const length = el.getTotalLength();
+    el.style.transition = 'none';
+    el.style.strokeDasharray = String(length);
+    el.style.strokeDashoffset = String(length);
+    el.getBoundingClientRect();
+    el.style.transition = 'stroke-dashoffset 1.6s cubic-bezier(.4,0,.2,1) .3s';
+    el.style.strokeDashoffset = '0';
+    const done = window.setTimeout(() => {
+      el.style.transition = '';
+      el.style.strokeDasharray = '';
+      el.style.strokeDashoffset = '';
+    }, 2000);
+    return () => window.clearTimeout(done);
+  }, [routePoints, reduceMotion]);
+
   const markers = useRef(new Map<string, L.Marker>());
   // Stable icon objects per (stop, state): react-leaflet only swaps an icon when its identity changes.
   const icons = useRef(new Map<string, L.DivIcon>());
@@ -125,7 +148,7 @@ export function TripMap({
     <div
       role="region"
       aria-label={`Map of the route with ${legs.length} stops`}
-      className="shadow-soft relative h-[22rem] w-full overflow-hidden rounded-lg border lg:h-[34rem]"
+      className="shadow-soft relative h-full min-h-[16rem] w-full overflow-hidden rounded-lg border"
     >
       {activeId && onSelect && (
         <button
@@ -142,6 +165,7 @@ export function TripMap({
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <Polyline
+          ref={lineRef}
           positions={path}
           pathOptions={{
             color: 'hsl(12 72% 38%)',
