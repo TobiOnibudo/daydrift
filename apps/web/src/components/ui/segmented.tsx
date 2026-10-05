@@ -50,7 +50,13 @@ export function Segmented<T extends string>({
               className="sr-only"
             />
             <span className="font-medium">{option.label}</span>
-            {option.hint && <span className="text-muted-foreground text-xs">{option.hint}</span>}
+            {option.hint && (
+              <span
+                className={cn('text-xs', checked ? 'text-foreground/80' : 'text-muted-foreground')}
+              >
+                {option.hint}
+              </span>
+            )}
           </label>
         );
       })}

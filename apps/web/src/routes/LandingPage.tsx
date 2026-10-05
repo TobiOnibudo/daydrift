@@ -32,7 +32,7 @@ export function LandingPage() {
 
         <div className="container grid items-center gap-10 py-16 lg:grid-cols-2 lg:py-24">
           <div className="space-y-6">
-            <p className="text-primary text-sm font-medium uppercase tracking-widest">
+            <p className="text-secondary text-sm font-medium uppercase tracking-widest">
               AI city guide
             </p>
             <h1 className="text-5xl font-semibold leading-[1.05] sm:text-6xl">

@@ -61,7 +61,7 @@ export function TripMap({ legs, routeGeojson }: TripMapProps) {
         <Polyline
           positions={path}
           pathOptions={{
-            color: 'hsl(12 72% 42%)',
+            color: 'hsl(12 72% 38%)',
             weight: 4,
             opacity: 0.9,
             // Dashed when it is only a straight-line fallback, solid for a real road/path route.
