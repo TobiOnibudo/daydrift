@@ -1,0 +1,15 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "pnpm install --frozen-lockfile && pnpm turbo run build --filter=@daydrift/api... --filter=@daydrift/web"
+  },
+  "deploy": {
+    "preDeployCommand": ["pnpm --filter @daydrift/db migrate"],
+    "startCommand": "pnpm --filter @daydrift/api start",
+    "healthcheckPath": "/health/ready",
+    "healthcheckTimeout": 60,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  }
+}
