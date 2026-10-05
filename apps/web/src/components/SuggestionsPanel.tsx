@@ -27,9 +27,14 @@ export function SuggestionsPanel({
   const [text, setText] = useState('');
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
   const { data, isPending, error, refetch } = useSuggestions(tripId, query);
 
-  useEffect(() => inputRef.current?.focus(), []);
+  // On a phone the panel opens below the fold: bring it (and the search box) into view.
+  useEffect(() => {
+    inputRef.current?.focus({ preventScroll: true });
+    panelRef.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+  }, []);
   // Wait for a pause in typing before searching.
   useEffect(() => {
     const timer = window.setTimeout(() => setQuery(text.trim()), 300);
@@ -40,6 +45,7 @@ export function SuggestionsPanel({
 
   return (
     <section
+      ref={panelRef}
       aria-label={title}
       className="border-input bg-card/80 shadow-soft mt-4 space-y-3 rounded-xl border p-3 backdrop-blur"
       onKeyDown={(e) => e.key === 'Escape' && onClose()}
@@ -103,11 +109,12 @@ export function SuggestionsPanel({
                       {place.category}
                     </span>
                   </span>
-                  {place.description && (
-                    <span className="text-muted-foreground line-clamp-2 block text-xs">
-                      {place.description}
-                    </span>
-                  )}
+                  {place.description &&
+                    place.description.trim().toLowerCase() !== place.category && (
+                      <span className="text-muted-foreground line-clamp-2 block text-xs">
+                        {place.description}
+                      </span>
+                    )}
                 </span>
               </button>
             </li>

@@ -149,7 +149,7 @@ export function ItineraryList({
                     <div
                       role="group"
                       aria-label={`Edit ${leg.name}`}
-                      className="mb-2 flex flex-wrap gap-1.5"
+                      className="mb-2 flex gap-1.5 pr-1"
                     >
                       <EditButton
                         label={`Move ${leg.name} up`}
@@ -212,7 +212,7 @@ function EditButton({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        'border-input bg-card hover:bg-accent focus-visible:ring-ring inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-40',
+        'border-input bg-card hover:bg-accent focus-visible:ring-ring inline-flex flex-1 items-center justify-center gap-1 rounded-md border px-1.5 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-40',
         danger && 'text-destructive',
       )}
     >
