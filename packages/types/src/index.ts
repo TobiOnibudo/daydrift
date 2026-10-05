@@ -101,7 +101,7 @@ export const TripResultSchema = z.object({
 export type TripResult = z.infer<typeof TripResultSchema>;
 
 /** Generation progress steps surfaced to the client. */
-export const TripStepSchema = z.enum([retrieving, generating, routing]);
+export const TripStepSchema = z.enum(['retrieving', 'generating', 'routing']);
 export type TripStep = z.infer<typeof TripStepSchema>;
 
 /** Events the worker publishes and the API relays over SSE (docs/04 §5). */
