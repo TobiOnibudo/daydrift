@@ -1,9 +1,9 @@
 # plugins
 
-Fastify plugins and shared request-lifecycle helpers for `@daydrift/api`.
+Cross-cutting request-lifecycle pieces for `@daydrift/api`.
 
-| File      | Purpose                                                                                           |
-| --------- | ------------------------------------------------------------------------------------------------- |
-| `auth.ts` | `requireAuth` preHandler (Better Auth session → `request.userId`) and the `errorEnvelope` helper. |
-
-Add new cross-cutting concerns (hooks, decorators, shared preHandlers) here.
+| File               | Purpose                                                                  |
+| ------------------ | ------------------------------------------------------------------------ |
+| `auth.ts`          | `requireAuth`: validates the Better Auth session, sets `request.userId`. |
+| `better-auth.ts`   | Mounts Better Auth at `/api/v1/auth/*` (forwards every `Set-Cookie`).    |
+| `error-handler.ts` | Maps `AppError`, rate limits, and unknown errors to the error envelope.  |

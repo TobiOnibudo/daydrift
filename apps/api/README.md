@@ -1,26 +1,23 @@
 # @daydrift/api
 
-Fastify web service for Daydrift v2. Exposes the REST API under `/api/v1`, mounts
-Better Auth at `/api/v1/auth/*`, relays worker progress over SSE, and serves the
-built SPA. Enqueues `ai-plan` jobs for the worker; it does **not** run the RAG
-pipeline itself (see [`docs/01-architecture.md`](../../docs/01-architecture.md)).
+Fastify web service: REST under `/api/v1`, Better Auth at `/api/v1/auth/*`, SSE relay of worker progress. It enqueues `ai-plan` jobs; it does **not** run the RAG pipeline (see [docs/01](../../docs/01-architecture.md)).
 
-## Responsibilities
+## Layout
 
-- Auth, places, and trips route modules (`src/routes`).
-- `requireAuth` session validation (`src/plugins/auth.ts`).
-- SSE stream relay backed by Redis pub/sub (`src/routes/sse.ts`).
-- Central error envelope + rate limiting + CORS.
+| Path                | Role                                                                        |
+| ------------------- | --------------------------------------------------------------------------- |
+| `src/app.ts`        | `buildApp()`: plugins, queue, routes. Importable without listening (tests). |
+| `src/server.ts`     | Entry point: listen and graceful shutdown.                                  |
+| `src/routes/`       | health, places, trips, and SSE route modules.                               |
+| `src/plugins/`      | `requireAuth`, Better Auth mount, central error handler.                    |
+| `src/lib/errors.ts` | `AppError`, the error envelope, and `parse()` for Zod validation.           |
+
+## Behavior worth knowing
+
+- `POST /trips` normalizes the input and checks the result cache first; a hit creates an already-complete trip without enqueueing.
+- `GET /trips/:id/stream` subscribes before checking stored status, so a client that connects after the worker finished still gets the terminal event.
+- `POST /places/seed` is limited to known cities, serialized per city, and rate limited.
 
 ## Scripts
 
-| Script      | Description               |
-| ----------- | ------------------------- |
-| `dev`       | `tsx watch src/server.ts` |
-| `build`     | `tsc` → `dist`            |
-| `start`     | `node dist/server.js`     |
-| `typecheck` | `tsc --noEmit`            |
-| `lint`      | `eslint src`              |
-| `clean`     | `rimraf dist`             |
-
-See [`docs/04-api.md`](../../docs/04-api.md) for the full API contract.
+`dev` (tsx watch), `build`, `start`, `typecheck`, `lint`, `test` (vitest), `clean`. Full contract: [docs/04](../../docs/04-api.md).

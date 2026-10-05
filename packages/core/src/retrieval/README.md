@@ -1,9 +1,16 @@
 # retrieval
 
-**What's in here:** The RAG retrieval stage — turning a normalized trip request into a short, diverse list of candidate places.
+What's in here: the retrieval half of the RAG pipeline (docs/03 §3-4).
 
-**Files:**
+| File               | Role                                                                    |
+| ------------------ | ----------------------------------------------------------------------- |
+| `index.ts`         | `searchCandidatePlaces()`: orchestrates the steps below.                |
+| `query-builder.ts` | Turns a trip request into the text that gets embedded.                  |
+| `vector-search.ts` | HNSW cosine search (`vectorSearch`) and the city pool loader.           |
+| `cache.ts`         | `places:city:<city>` pool cache (10 min); invalidated on re-seed.       |
+| `scoring.ts`       | Vector-rank base score plus a lexical boost per matched interest.       |
+| `diversity.ts`     | Greedy pick with category/area penalties, so results are not all cafes. |
+| `semantic.ts`      | Plain semantic search (no diversification) for the API.                 |
+| `columns.ts`       | Place columns minus the embedding, so vectors never leave the database. |
 
-- `index.ts` — `searchCandidatePlaces()`: embed query → HNSW vector top-k → re-rank + ILIKE boost → diversify to 15.
-
-**How it fits:** Called by the worker's planning flow (`packages/core` → `apps/worker`). Depends on `@daydrift/ai` (`embed`), `@daydrift/db` (places/pgvector), and `@daydrift/types` (`Place`). See docs/03-rag-pipeline.md §3–4.
+How it fits: called by the worker's ai-plan processor and by `POST /places/search/semantic`.

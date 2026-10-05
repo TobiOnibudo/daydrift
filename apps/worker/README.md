@@ -1,26 +1,24 @@
 # @daydrift/worker
 
-Native **background worker** for Daydrift v2. It consumes the `ai-plan` BullMQ
-queue (backed by Redis) and runs the full RAG pipeline from
-[`docs/03-rag-pipeline.md`](../../docs/03-rag-pipeline.md): embed → vector
-retrieve → score/diversify → prompt → `generateObject`/`streamText` → normalize →
-OSRM route → persist. Progress is published to the Redis channel `trip:<id>`,
-which the API relays to the browser over SSE.
+Native **background worker** (no HTTP server, no port). It runs two BullMQ consumers:
 
-## No HTTP surface
+- `ai-plan`: the RAG pipeline from [docs/03](../../docs/03-rag-pipeline.md). Retrieves candidates, generates a structured itinerary, streams a narrative, routes it, persists the trip, caches the result, and publishes progress to Redis channel `trip:<id>` (the API relays it over SSE).
+- `embed-place`: embeds places enqueued by `pnpm seed`.
 
-This process has **no HTTP server and no port** — it is a long-lived background
-process restarted on crash by the platform. This is the intended fix for v1
-problem #6 (workers deployed as web services). See
-[`docs/01-architecture.md`](../../docs/01-architecture.md) §Process model.
+## Layout
+
+| Path                            | Role                                                                    |
+| ------------------------------- | ----------------------------------------------------------------------- |
+| `src/index.ts`                  | Boot, exhausted-retry handling, graceful shutdown.                      |
+| `src/processors/ai-plan.ts`     | The pipeline, with injected dependencies (unit-testable without infra). |
+| `src/processors/deps.ts`        | Production wiring of those dependencies.                                |
+| `src/processors/embed-place.ts` | Starts the embedding consumer.                                          |
+| `src/events.ts`                 | Redis pub/sub publisher for trip events.                                |
+
+## Failure behavior
+
+If generation fails, a proximity-ordered fallback itinerary is saved (and not cached). The trip is only marked `failed` when no itinerary can be built. If OSRM is down the trip still completes, with a straight-line distance and no route geometry.
 
 ## Scripts
 
-| Script      | Description              |
-| ----------- | ------------------------ |
-| `dev`       | `tsx watch src/index.ts` |
-| `build`     | `tsc` → `dist`           |
-| `start`     | `node dist/index.js`     |
-| `typecheck` | `tsc --noEmit`           |
-| `lint`      | `eslint src`             |
-| `clean`     | `rimraf dist`            |
+`dev` (tsx watch), `build`, `start`, `typecheck`, `lint`, `test` (vitest), `clean`.
