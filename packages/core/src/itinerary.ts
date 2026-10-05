@@ -52,7 +52,12 @@ export function normalizeItineraryLegs(
   return result;
 }
 
-function distanceKm(a: Place, b: Place): number {
+interface Point {
+  lat: number;
+  lng: number;
+}
+
+function distanceKm(a: Point, b: Point): number {
   const R = 6371;
   const rad = (d: number) => (d * Math.PI) / 180;
   const dLat = rad(b.lat - a.lat);
@@ -60,6 +65,11 @@ function distanceKm(a: Place, b: Place): number {
   const h =
     Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+/** Total straight-line length through the points in order; used when road routing is unavailable. */
+export function pathDistanceKm(points: Point[]): number {
+  return points.slice(1).reduce((sum, p, i) => sum + distanceKm(points[i] as Point, p), 0);
 }
 
 /**

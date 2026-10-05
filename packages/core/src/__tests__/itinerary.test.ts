@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { buildFallbackItinerary, normalizeItineraryLegs } from '../itinerary.js';
+import { buildFallbackItinerary, normalizeItineraryLegs, pathDistanceKm } from '../itinerary.js';
 
 import { makePlace } from './fixtures.js';
 
@@ -62,5 +62,22 @@ describe('buildFallbackItinerary', () => {
   it('throws when there are too few candidates', () => {
     expect(() => buildFallbackItinerary(candidates.slice(0, 2), 3, 5)).toThrow();
     expect(() => buildFallbackItinerary([], 1, 2)).toThrow();
+  });
+});
+
+describe('pathDistanceKm', () => {
+  it('sums haversine legs in order', () => {
+    // 0.01 degrees of latitude is ~1.11 km
+    const d = pathDistanceKm([
+      { lat: 43.65, lng: -79.38 },
+      { lat: 43.66, lng: -79.38 },
+      { lat: 43.67, lng: -79.38 },
+    ]);
+    expect(d).toBeCloseTo(2.22, 1);
+  });
+
+  it('is zero for fewer than two points', () => {
+    expect(pathDistanceKm([])).toBe(0);
+    expect(pathDistanceKm([{ lat: 1, lng: 1 }])).toBe(0);
   });
 });
