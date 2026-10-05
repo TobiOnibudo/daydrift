@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { fetchJson } from '../lib/api';
-import type { ApiTrip, CitySummary, CreateTripPayload, SharedApiTrip } from '../lib/types';
+import type {
+  ApiPlace,
+  ApiTrip,
+  CitySummary,
+  CreateTripPayload,
+  SharedApiTrip,
+} from '../lib/types';
 
 // All server state lives here (docs/05 §2). Cache keys: ['trips'], ['trip', id],
 // ['shared', token], ['cities'].
@@ -94,4 +100,54 @@ export function useShareTrip(tripId: string) {
     onSuccess: invalidate,
   });
   return { enable, disable };
+}
+
+/**
+ * Save a new ordered list of stops. Reorders and removals show instantly and roll back if the
+ * server refuses; additions wait for the server, which supplies the new stop's details.
+ */
+export function useUpdateStops(tripId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (placeIds: string[]) =>
+      (
+        await fetchJson<{ trip: ApiTrip }>(`/trips/${tripId}/stops`, {
+          method: 'PATCH',
+          json: { placeIds },
+        })
+      ).trip,
+    onMutate: async (placeIds) => {
+      await queryClient.cancelQueries({ queryKey: tripKey(tripId) });
+      const previous = queryClient.getQueryData<ApiTrip>(tripKey(tripId));
+      if (previous) {
+        const known = new Map(previous.legs.map((leg) => [leg.placeId, leg]));
+        const legs = placeIds.flatMap((id, index) => {
+          const leg = known.get(id);
+          return leg ? [{ ...leg, order: index + 1 }] : [];
+        });
+        if (legs.length === placeIds.length) {
+          queryClient.setQueryData(tripKey(tripId), { ...previous, legs });
+        }
+      }
+      return { previous };
+    },
+    onError: (_error, _ids, context) => {
+      if (context?.previous) queryClient.setQueryData(tripKey(tripId), context.previous);
+    },
+    onSuccess: (trip) => queryClient.setQueryData(tripKey(tripId), trip),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['trips'] }),
+  });
+}
+
+/** Places that could be added to a trip: matches for a search, or picks for the trip's interests. */
+export function useSuggestions(tripId: string, query: string, enabled = true) {
+  return useQuery({
+    queryKey: ['suggestions', tripId, query],
+    queryFn: async () => {
+      const q = query ? `?q=${encodeURIComponent(query)}` : '';
+      return (await fetchJson<{ places: ApiPlace[] }>(`/trips/${tripId}/suggestions${q}`)).places;
+    },
+    enabled: enabled && Boolean(tripId),
+    staleTime: 60_000,
+  });
 }
