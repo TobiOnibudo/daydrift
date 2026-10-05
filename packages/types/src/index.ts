@@ -54,8 +54,8 @@ export type TravelMode = z.infer<typeof TravelModeSchema>;
 
 /** Input accepted when creating a trip. */
 export const CreateTripInputSchema = z.object({
-  city: z.string(),
-  interests: z.array(z.string()),
+  city: z.string().trim().min(1).max(100),
+  interests: z.array(z.string().trim().min(1).max(50)).max(10).default([]),
   duration: DurationSchema,
   travelMode: TravelModeSchema,
 });
@@ -89,3 +89,29 @@ export const TripSchema = z.object({
   createdAt: z.date(),
 });
 export type Trip = z.infer<typeof TripSchema>;
+
+/** The user-independent output of a generation run; this is what the result cache stores. */
+export const TripResultSchema = z.object({
+  title: z.string(),
+  legs: z.array(TripLegSchema),
+  routeGeojson: z.unknown(),
+  totalDistanceKm: z.number(),
+  vibeTags: z.array(z.string()),
+});
+export type TripResult = z.infer<typeof TripResultSchema>;
+
+/** Generation progress steps surfaced to the client. */
+export const TripStepSchema = z.enum([retrieving, generating, routing]);
+export type TripStep = z.infer<typeof TripStepSchema>;
+
+/** Events the worker publishes and the API relays over SSE (docs/04 §5). */
+export const TripEventSchema = z.discriminatedUnion('event', [
+  z.object({
+    event: z.literal('status'),
+    data: z.object({ step: TripStepSchema, label: z.string() }),
+  }),
+  z.object({ event: z.literal('token'), data: z.object({ text: z.string() }) }),
+  z.object({ event: z.literal('complete'), data: z.object({ trip: TripSchema }) }),
+  z.object({ event: z.literal('failed'), data: z.object({ message: z.string() }) }),
+]);
+export type TripEvent = z.infer<typeof TripEventSchema>;
