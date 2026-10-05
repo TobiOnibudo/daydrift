@@ -3,7 +3,11 @@ import { z } from 'zod';
 export const ItineraryLegSchema = z.object({
   placeId: z.string().describe('The ref (e.g. p3) of a provided candidate place'),
   order: z.number().int().describe('1-based position in the itinerary'),
-  rationale: z.string().describe('One sentence on why this stop fits the traveler'),
+  rationale: z
+    .string()
+    .describe(
+      'One short sentence, under 20 words: what this place is and why it suits the traveler',
+    ),
 });
 
 export const ItineraryOutputSchema = z.object({

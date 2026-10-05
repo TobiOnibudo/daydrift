@@ -99,11 +99,16 @@ export function ItineraryList({
                 {leg.order}
               </span>
               <span className="min-w-0 pt-0.5">
-                <span className="block font-sans text-base font-semibold leading-snug">
-                  {leg.name}
+                <span className="flex flex-wrap items-baseline gap-x-2">
+                  <span className="font-sans text-base font-semibold leading-snug">{leg.name}</span>
+                  {leg.category && (
+                    <span className="text-muted-foreground text-xs capitalize">{leg.category}</span>
+                  )}
                 </span>
                 {leg.note && (
-                  <span className="text-muted-foreground mt-1 block text-sm">{leg.note}</span>
+                  <span className="text-muted-foreground mt-0.5 block text-sm leading-snug">
+                    {leg.note}
+                  </span>
                 )}
               </span>
             </button>

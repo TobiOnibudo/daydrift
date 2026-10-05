@@ -34,9 +34,11 @@ const RAW = { rawPrompt: null, rawSettings: {} };
 
 /** Pull candidate refs (`- p3: Name (category)`) and the requested stop count out of our prompt. */
 export function planFromPrompt(prompt: string) {
-  const places = [...prompt.matchAll(/^- (p\d+): (.+?) \(/gm)].map((m) => ({
+  const places = [...prompt.matchAll(/^- (p\d+): (.+?) \((\w+)\)(?: - (.+))?$/gm)].map((m) => ({
     ref: m[1] as string,
     name: m[2] as string,
+    category: m[3] as string,
+    description: m[4],
   }));
   const range = /exactly (\d+)(?:-(\d+))? stops/.exec(prompt);
   const stops = Math.min(places.length, Number(range?.[1] ?? 3));
@@ -48,7 +50,7 @@ export function planFromPrompt(prompt: string) {
     legs: places.slice(0, stops).map((p, i) => ({
       placeId: p.ref,
       order: i + 1,
-      rationale: `A fine stop: ${p.name}.`,
+      rationale: `${p.name} is a ${p.description ?? p.category} worth a stop.`,
     })),
   };
 }

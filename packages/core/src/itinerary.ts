@@ -1,5 +1,7 @@
 import type { Place, TripLeg } from '@daydrift/types';
 
+import { oneLiner, placeBlurb } from './blurb.js';
+
 // Itinerary post-processing + fallback construction. See docs/03 §7 and §9.
 
 /** A leg as produced by the model: references a candidate by id. */
@@ -9,11 +11,13 @@ export interface ModelLeg {
   rationale?: string;
 }
 
+/** Every stop gets a one-line description: the model's if it gave one, else from the place data. */
 const toLeg = (place: Place, order: number, note?: string): TripLeg => ({
   placeId: place.id,
   name: place.name,
   order,
-  ...(note ? { note } : {}),
+  note: oneLiner(note) ?? placeBlurb(place),
+  category: place.category,
   lat: place.lat,
   lng: place.lng,
 });

@@ -37,7 +37,7 @@ export function buildItineraryPrompt(candidates: Place[], input: CreateTripInput
 Traveler interests: ${input.interests.join(', ') || 'general sightseeing'}.
 
 Choose exactly ${range} using ONLY the candidate places below. Refer to each by its ref (p1, p2, ...) in placeId; never invent refs.
-Order the stops so the route flows and suits the travel mode. For each stop give a one-sentence rationale tied to the interests. Add 3-5 short vibe tags.
+Order the stops so the route flows and suits the travel mode. For each stop write ONE short sentence (under 20 words) saying what the place is and why it suits the traveler. Add 3-5 short vibe tags.
 
 Candidates:
 ${candidateList}`;

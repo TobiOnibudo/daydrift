@@ -129,3 +129,39 @@ describe('ItineraryList', () => {
     });
   });
 });
+
+describe('ItineraryList one-line descriptions', () => {
+  it('shows each stop with its category and a single descriptive line', () => {
+    render(
+      <ItineraryList
+        travelMode="walking"
+        legs={[
+          {
+            placeId: 'a',
+            name: 'Royal Ontario Museum',
+            order: 1,
+            category: 'museum',
+            note: 'Natural history and world cultures under one roof.',
+            lat: 43.66,
+            lng: -79.39,
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByText('Royal Ontario Museum')).toBeInTheDocument();
+    expect(screen.getByText('museum')).toBeInTheDocument();
+    expect(
+      screen.getByText('Natural history and world cultures under one roof.'),
+    ).toBeInTheDocument();
+  });
+
+  it('still renders stops saved before categories existed', () => {
+    render(
+      <ItineraryList
+        travelMode="walking"
+        legs={[{ placeId: 'a', name: 'Old Trip Stop', order: 1, lat: 1, lng: 1 }]}
+      />,
+    );
+    expect(screen.getByText('Old Trip Stop')).toBeInTheDocument();
+  });
+});

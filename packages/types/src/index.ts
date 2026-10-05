@@ -66,7 +66,10 @@ export const TripLegSchema = z.object({
   placeId: z.string().uuid(),
   name: z.string(),
   order: z.number().int(),
+  /** A one-line description of the stop. */
   note: z.string().optional(),
+  /** Older trips were saved before categories were kept on legs. */
+  category: PlaceCategorySchema.optional(),
   lat: z.number(),
   lng: z.number(),
 });
