@@ -21,3 +21,19 @@ if (!window.matchMedia) {
 }
 
 window.scrollTo = () => undefined;
+
+// Harmless stand-ins for the observers that figures and maps rely on.
+class StubObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() {
+    return [];
+  }
+}
+if (typeof globalThis.IntersectionObserver === 'undefined') {
+  Object.assign(globalThis, { IntersectionObserver: StubObserver });
+}
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  Object.assign(globalThis, { ResizeObserver: StubObserver });
+}
