@@ -1,7 +1,7 @@
 import { config } from '@daydrift/config';
+import type { TravelMode } from '@daydrift/types';
 
-// OSRM routing. Mode-aware route geometry + distance for the itinerary legs
-// (docs/03 §7). The OSRM base URL comes from config (defaults to public OSRM).
+// OSRM routing: mode-aware route geometry + distance for the itinerary legs (docs/03 §7).
 
 export interface Coord {
   lat: number;
@@ -9,18 +9,38 @@ export interface Coord {
 }
 
 export interface RouteResult {
-  geojson: unknown;
+  geojson: GeoJSON.LineString | null;
   totalDistanceKm: number;
 }
 
-// `OSRM_BASE_URL` lives under config.external (optional; defaults to public OSRM).
-const external = config as unknown as { external?: { osrmBaseUrl?: string } };
-const OSRM_BASE_URL = external.external?.osrmBaseUrl ?? 'https://router.project-osrm.org';
+// routing.openstreetmap.de serves one OSRM instance per profile under these prefixes.
+const MODE_PATH: Record<TravelMode, string> = {
+  walking: 'routed-foot',
+  cycling: 'routed-bike',
+  driving: 'routed-car',
+};
 
-/** Fetch a route over the given ordered coordinates via OSRM. */
-export async function fetchRoute(_coords: Coord[]): Promise<RouteResult> {
-  // TODO: build the OSRM `/route/v1/{mode}/{coords}` request against
-  // OSRM_BASE_URL, parse geometry (route_geojson) + distance (total_distance_km).
-  void OSRM_BASE_URL;
-  return { geojson: null, totalDistanceKm: 0 };
+interface OsrmResponse {
+  code: string;
+  routes?: Array<{ distance: number; geometry: GeoJSON.LineString }>;
+}
+
+/** Fetch a route over the ordered coordinates. Returns an empty route for fewer than 2 points. */
+export async function fetchRoute(
+  coords: Coord[],
+  mode: TravelMode = 'walking',
+): Promise<RouteResult> {
+  if (coords.length < 2) return { geojson: null, totalDistanceKm: 0 };
+
+  const path = coords.map((c) => `${c.lng},${c.lat}`).join(';');
+  const url = `${config.external.osrmBaseUrl}/${MODE_PATH[mode]}/route/v1/driving/${path}?overview=full&geometries=geojson`;
+
+  const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+  if (!res.ok) throw new Error(`OSRM request failed: ${res.status} ${res.statusText}`);
+
+  const body = (await res.json()) as OsrmResponse;
+  const route = body.routes?.[0];
+  if (body.code !== 'Ok' || !route) throw new Error(`OSRM returned no route (code: ${body.code})`);
+
+  return { geojson: route.geometry, totalDistanceKm: route.distance / 1000 };
 }
