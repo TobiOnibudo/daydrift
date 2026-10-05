@@ -1,5 +1,6 @@
 import { config } from '@daydrift/config';
 import {
+  buildEditedResult,
   deleteTrip,
   failTrip,
   getCachedTripResult,
@@ -10,8 +11,11 @@ import {
   normalizeInput,
   resetTrip,
   shareTrip,
+  suggestPlacesForTrip,
+  TripEditError,
   tripInput,
   unshareTrip,
+  updateTripStops,
 } from '@daydrift/core';
 import { CreateTripInputSchema, type TripResult } from '@daydrift/types';
 import type { FastifyPluginAsync } from 'fastify';
@@ -28,6 +32,8 @@ const CREATE_LIMIT = {
 };
 
 const ListQuery = z.object({ city: z.string().trim().min(1).optional() });
+const StopsBody = z.object({ placeIds: z.array(z.string().uuid()).min(2).max(8) });
+const SuggestionQuery = z.object({ q: z.string().trim().max(80).optional() });
 
 export const tripRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('preHandler', requireAuth);
@@ -82,6 +88,38 @@ export const tripRoutes: FastifyPluginAsync = async (app) => {
     const { id } = parse(IdParams, request.params);
     if (!(await deleteTrip(id, request.userId))) throw AppError.notFound('Trip');
     return reply.status(204).send();
+  });
+
+  // Replace the itinerary with this ordered list of stops: reorder, remove, add, or swap in one call.
+  // Only finished trips can be edited, so an edit never races the worker.
+  app.patch('/trips/:id/stops', async (request) => {
+    const { id } = parse(IdParams, request.params);
+    const { placeIds } = parse(StopsBody, request.body);
+
+    const trip = await getTrip(id, request.userId);
+    if (!trip) throw AppError.notFound('Trip');
+    if (trip.status !== 'complete') throw AppError.conflict('This trip is still being planned.');
+
+    let result;
+    try {
+      result = await buildEditedResult(trip, placeIds);
+    } catch (err) {
+      if (err instanceof TripEditError) throw new AppError(400, 'VALIDATION_ERROR', err.message);
+      throw err;
+    }
+
+    const updated = await updateTripStops(id, request.userId, result);
+    if (!updated) throw AppError.conflict('This trip is still being planned.');
+    return { trip: updated };
+  });
+
+  // Places that could be added or swapped in: a name search, or the best matches for the trip.
+  app.get('/trips/:id/suggestions', async (request) => {
+    const { id } = parse(IdParams, request.params);
+    const { q } = parse(SuggestionQuery, request.query);
+    const trip = await getTrip(id, request.userId);
+    if (!trip) throw AppError.notFound('Trip');
+    return { places: await suggestPlacesForTrip(trip, q) };
   });
 
   // Sharing is opt-in per trip and only for completed trips; the token is the only credential.

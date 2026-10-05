@@ -17,6 +17,9 @@ const core = {
   shareTrip: vi.fn(),
   unshareTrip: vi.fn(),
   getSharedTrip: vi.fn(),
+  buildEditedResult: vi.fn(),
+  updateTripStops: vi.fn(),
+  suggestPlacesForTrip: vi.fn(),
 };
 vi.mock('@daydrift/core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@daydrift/core')>()),
@@ -24,6 +27,7 @@ vi.mock('@daydrift/core', async (importOriginal) => ({
 }));
 
 const { buildApp } = await import('../app.js');
+const { TripEditError } = await import('@daydrift/core');
 
 const queue = { add: vi.fn(), close: vi.fn(async () => undefined) };
 const TRIP_ID = '7d4b8a3e-7c43-4f6f-9d1b-1f2b7a9c0e11';
@@ -257,5 +261,96 @@ describe('sharing', () => {
       404,
     );
     expect((await app.inject({ method: 'GET', url: '/api/v1/shared/x' })).statusCode).toBe(400);
+  });
+});
+
+describe('editing stops', () => {
+  const ids = ['11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222'];
+  const patch = (payload: unknown) =>
+    app.inject({
+      method: 'PATCH',
+      url: `/api/v1/trips/${TRIP_ID}/stops`,
+      payload: payload as object,
+    });
+
+  it('saves a new order for a finished trip and returns the updated trip', async () => {
+    core.getTrip.mockResolvedValue({ id: TRIP_ID, status: 'complete', city: 'toronto', legs: [] });
+    core.buildEditedResult.mockResolvedValue({ legs: [] });
+    core.updateTripStops.mockResolvedValue({ id: TRIP_ID, status: 'complete', title: 'Edited' });
+
+    const res = await patch({ placeIds: ids });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json().trip.title).toBe('Edited');
+    expect(core.buildEditedResult).toHaveBeenCalledWith(
+      expect.objectContaining({ id: TRIP_ID }),
+      ids,
+    );
+    expect(core.updateTripStops).toHaveBeenCalledWith(TRIP_ID, 'u1', { legs: [] });
+  });
+
+  it('requires a session and only lets you edit your own trip', async () => {
+    getSession.mockResolvedValue(null);
+    expect((await patch({ placeIds: ids })).statusCode).toBe(401);
+
+    getSession.mockResolvedValue({ user: { id: 'u1' } });
+    core.getTrip.mockResolvedValue(null);
+    expect((await patch({ placeIds: ids })).statusCode).toBe(404);
+  });
+
+  it('refuses to edit a trip that is still being planned', async () => {
+    core.getTrip.mockResolvedValue({ id: TRIP_ID, status: 'processing' });
+    const res = await patch({ placeIds: ids });
+    expect(res.statusCode).toBe(409);
+    expect(core.buildEditedResult).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['fewer than two stops', { placeIds: [ids[0]] }],
+    [
+      'more than eight stops',
+      { placeIds: Array.from({ length: 9 }, (_, i) => `${i}${ids[0]!.slice(1)}`) },
+    ],
+    ['ids that are not uuids', { placeIds: ['a', 'b'] }],
+    ['a missing list', {}],
+  ])('rejects %s before touching the trip', async (_name, payload) => {
+    const res = await patch(payload);
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.code).toBe('VALIDATION_ERROR');
+    expect(core.updateTripStops).not.toHaveBeenCalled();
+  });
+
+  it('turns an unusable edit into a clear 400 the person can act on', async () => {
+    core.getTrip.mockResolvedValue({ id: TRIP_ID, status: 'complete' });
+    core.buildEditedResult.mockRejectedValue(
+      new TripEditError('One of those places is not available for this trip.'),
+    );
+    const res = await patch({ placeIds: ids });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.message).toMatch(/not available/);
+  });
+
+  it('serves suggestions for the trip, optionally filtered by a search', async () => {
+    core.getTrip.mockResolvedValue({ id: TRIP_ID, status: 'complete', city: 'toronto' });
+    core.suggestPlacesForTrip.mockResolvedValue([{ id: 'p1', name: 'High Park' }]);
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `/api/v1/trips/${TRIP_ID}/suggestions?q=park`,
+    });
+
+    expect(res.json().places[0].name).toBe('High Park');
+    expect(core.suggestPlacesForTrip).toHaveBeenCalledWith(
+      expect.objectContaining({ id: TRIP_ID }),
+      'park',
+    );
+    expect(
+      (
+        await app.inject({
+          method: 'GET',
+          url: `/api/v1/trips/${TRIP_ID}/suggestions?q=${'x'.repeat(81)}`,
+        })
+      ).statusCode,
+    ).toBe(400);
   });
 });
