@@ -21,7 +21,7 @@
     "@types/node": "^20.0.0",
     "autocannon": "^8.0.0",
     "drizzle-orm": "^0.33.0",
-    "ioredis": "^5.4.0",
+    "ioredis": "^6.0.0",
     "postgres": "^3.4.0",
     "tsx": "^4.19.0"
   }
