@@ -19,7 +19,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "ai": "^3.4.0",
+    "ai": "^7.0.137",
     "@ai-sdk/openai": "^0.0.70",
     "ollama-ai-provider": "^0.15.0",
     "@daydrift/config": "workspace:*",

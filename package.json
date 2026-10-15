@@ -24,8 +24,8 @@
     "load": "pnpm build && pnpm --filter @daydrift/e2e load"
   },
   "devDependencies": {
-    "@commitlint/cli": "^19.0.0",
-    "@commitlint/config-conventional": "^21.2.3",
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^19.0.0",
     "@playwright/test": "^1.63.0",
     "eslint": "^9.0.0",
     "eslint-plugin-import": "^2.29.0",
