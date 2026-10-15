@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "ai": "^3.4.0",
-    "@ai-sdk/openai": "^0.0.70",
+    "@ai-sdk/openai": "^4.0.91",
     "ollama-ai-provider": "^0.15.0",
     "@daydrift/config": "workspace:*",
     "@daydrift/types": "workspace:*",
