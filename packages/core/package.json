@@ -28,7 +28,7 @@
     "@daydrift/config": "workspace:*",
     "ioredis": "^6.0.0",
     "drizzle-orm": "^0.45.4",
-    "zod": "^3.23.0",
+    "zod": "^4.6.7",
     "@daydrift/queue": "workspace:*"
   },
   "devDependencies": {
