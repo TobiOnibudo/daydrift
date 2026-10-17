@@ -68,6 +68,7 @@ describe('production safety', () => {
     vi.stubEnv('NODE_ENV', 'production');
     vi.stubEnv('DATABASE_URL', 'postgresql://u:p@db:5432/x');
     vi.stubEnv('REDIS_URL', 'redis://redis:6379');
+    vi.stubEnv('VITE_API_URL', 'https://api.example.test');
 
     try {
       const provider = await import('../provider.js');
