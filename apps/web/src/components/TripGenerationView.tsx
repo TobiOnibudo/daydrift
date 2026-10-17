@@ -42,7 +42,9 @@ export function TripGenerationView({
   const { phase, error } = stream;
   // The latest callback is read when the stream ends, so a new function identity never re-reports.
   const finished = useRef(onFinished);
-  finished.current = onFinished;
+  useEffect(() => {
+    finished.current = onFinished;
+  }, [onFinished]);
   useEffect(() => {
     if (phase === 'complete') finished.current?.({ ok: true });
     if (phase === 'failed') finished.current?.({ ok: false, message: error ?? '' });

@@ -34,8 +34,15 @@ const DEFAULT_JOB_OPTS = {
 } as const;
 
 /** Create the `ai-plan` producer queue. */
-export function createAiPlanQueue(): Queue<AiPlanJobData> {
-  return new Queue<AiPlanJobData>(AI_PLAN_QUEUE, {
+export function createAiPlanQueue(): Queue<
+  AiPlanJobData,
+  unknown,
+  string,
+  AiPlanJobData,
+  unknown,
+  string
+> {
+  return new Queue<AiPlanJobData, unknown, string, AiPlanJobData, unknown, string>(AI_PLAN_QUEUE, {
     connection: createRedisConnection(),
     defaultJobOptions: DEFAULT_JOB_OPTS,
   });

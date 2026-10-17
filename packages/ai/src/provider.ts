@@ -63,29 +63,26 @@ export function getLanguageModel(): LanguageModel {
 }
 
 /** Resolve the configured embedding model instance. */
-export function getEmbeddingModel(): EmbeddingModel<string> {
+export function getEmbeddingModel(): EmbeddingModel {
   const s: ProviderSettings = config.embedding;
   if (s.provider === 'mock') {
     assertMockAllowed();
-    return createMockEmbeddingModel(config.embedding.dim) as unknown as EmbeddingModel<string>;
+    return createMockEmbeddingModel(config.embedding.dim) as unknown as EmbeddingModel;
   }
   const model = requireModel(s, 'embedding');
   switch (s.provider) {
     case 'ollama':
       return createOllama({ baseURL: ollamaApiUrl(s.baseUrl) }).embedding(
         model,
-      ) as unknown as EmbeddingModel<string>;
+      ) as unknown as EmbeddingModel;
     case 'openai':
-      return openaiLike(s).embedding(
-        model,
-        embeddingSettings(model),
-      ) as unknown as EmbeddingModel<string>;
+      return openaiLike(s).embedding(model, embeddingSettings(model)) as unknown as EmbeddingModel;
     default:
       if (s.baseUrl) {
         return openaiLike(s).embedding(
           model,
           embeddingSettings(model),
-        ) as unknown as EmbeddingModel<string>;
+        ) as unknown as EmbeddingModel;
       }
       throw new Error(
         `Unsupported embedding provider "${s.provider}" (set EMBEDDING_BASE_URL for a generic endpoint).`,

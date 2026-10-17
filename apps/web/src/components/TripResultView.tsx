@@ -1,5 +1,5 @@
 import { Bike, Car, ExternalLink, Footprints, Plus, Route } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import type { TripEditor } from '../hooks/useTripEditor';
 import { MAX_STOPS } from '../lib/editing';
@@ -55,14 +55,10 @@ export function TripResultView({ trip, actions, back, editor, refine }: TripResu
 
   // One selection shared by the list and the map, so each drives the other.
   const [activeId, setActiveId] = useState<string | null>(null);
+  const visibleActiveId = trip.legs.some((leg) => leg.placeId === activeId) ? activeId : null;
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   // null = closed; otherwise adding a stop, or swapping out the stop with this id.
   const [picker, setPicker] = useState<{ swapId: string | null } | null>(null);
-
-  // A stop that was removed can no longer be the selection.
-  useEffect(() => {
-    if (activeId && !trip.legs.some((leg) => leg.placeId === activeId)) setActiveId(null);
-  }, [activeId, trip.legs]);
 
   const swapping = picker?.swapId ? trip.legs.find((l) => l.placeId === picker.swapId) : undefined;
 
@@ -121,7 +117,7 @@ export function TripResultView({ trip, actions, back, editor, refine }: TripResu
         <TripMap
           legs={trip.legs}
           routeGeojson={trip.routeGeojson}
-          activeId={activeId}
+          activeId={visibleActiveId}
           hoveredId={hoveredId}
           onSelect={setActiveId}
           onHover={setHoveredId}
@@ -136,7 +132,7 @@ export function TripResultView({ trip, actions, back, editor, refine }: TripResu
         <ItineraryList
           legs={trip.legs}
           travelMode={trip.travelMode}
-          activeId={activeId}
+          activeId={visibleActiveId}
           hoveredId={hoveredId}
           onSelect={setActiveId}
           onHover={setHoveredId}

@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "bullmq": "^5.0.0",
-    "ioredis": "^6.0.0",
+    "ioredis": "^5.11.1",
     "@daydrift/config": "workspace:*",
     "@daydrift/types": "workspace:*"
   }

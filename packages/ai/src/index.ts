@@ -54,7 +54,7 @@ export interface StreamTextOptions {
 }
 
 /** Stream narrative text tokens for perceived performance over SSE. */
-export function streamText(opts: StreamTextOptions) {
+export function streamText(opts: StreamTextOptions): ReturnType<typeof aiStreamText> {
   return aiStreamText({
     model: getLanguageModel(),
     prompt: opts.prompt,

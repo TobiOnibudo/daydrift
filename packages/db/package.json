@@ -25,9 +25,7 @@
     "drizzle-orm": "^0.45.4",
     "postgres": "^3.4.0",
     "@daydrift/config": "workspace:*",
-    "@daydrift/types": "workspace:*"
-  },
-  "devDependencies": {
+    "@daydrift/types": "workspace:*",
     "drizzle-kit": "^0.31.11"
   }
 }

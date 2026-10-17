@@ -18,11 +18,21 @@ const DEFAULT_JOB_OPTS = {
 } as const;
 
 /** Producer queue for place-embedding jobs (one per place that lacks an embedding). */
-export function createEmbedPlaceQueue(): Queue<EmbedPlaceJobData> {
-  return new Queue<EmbedPlaceJobData>(EMBED_PLACE_QUEUE, {
-    connection: createRedisConnection(),
-    defaultJobOptions: DEFAULT_JOB_OPTS,
-  });
+export function createEmbedPlaceQueue(): Queue<
+  EmbedPlaceJobData,
+  unknown,
+  string,
+  EmbedPlaceJobData,
+  unknown,
+  string
+> {
+  return new Queue<EmbedPlaceJobData, unknown, string, EmbedPlaceJobData, unknown, string>(
+    EMBED_PLACE_QUEUE,
+    {
+      connection: createRedisConnection(),
+      defaultJobOptions: DEFAULT_JOB_OPTS,
+    },
+  );
 }
 
 /** Consumer for place-embedding jobs; modest concurrency keeps provider rate limits happy. */

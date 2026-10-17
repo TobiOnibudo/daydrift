@@ -1,4 +1,5 @@
-import { MockEmbeddingModelV1, MockLanguageModelV1, simulateReadableStream } from 'ai/test';
+import { simulateReadableStream } from 'ai';
+import { MockEmbeddingModelV3, MockLanguageModelV3 } from 'ai/test';
 
 // Deterministic, offline stand-ins for the embedding and chat models. Selected with
 // LLM_PROVIDER=mock / EMBEDDING_PROVIDER=mock so end-to-end tests and CI need no Ollama or OpenAI.
@@ -19,18 +20,21 @@ export function mockEmbedding(text: string, dim: number): number[] {
 }
 
 export const createMockEmbeddingModel = (dim: number) =>
-  new MockEmbeddingModelV1<string>({
+  new MockEmbeddingModelV3({
     modelId: 'mock-embedding',
     maxEmbeddingsPerCall: 100,
     supportsParallelCalls: true,
     doEmbed: async ({ values }) => ({
       embeddings: values.map((v) => mockEmbedding(v, dim)),
       usage: { tokens: values.join(' ').split(/\s+/).length },
+      warnings: [],
     }),
   });
 
-const USAGE = { promptTokens: 1, completionTokens: 1 };
-const RAW = { rawPrompt: null, rawSettings: {} };
+const USAGE = {
+  inputTokens: { total: 1, noCache: 1, cacheRead: undefined, cacheWrite: undefined },
+  outputTokens: { total: 1, text: 1, reasoning: undefined },
+};
 
 /** Pull candidate refs (`- p3: Name (category)`) and the requested stop count out of our prompt. */
 export function planFromPrompt(prompt: string) {
@@ -68,26 +72,31 @@ const NARRATIVE =
   'Start your day with an easy stroll, then let the city carry you from stop to stop.';
 
 export const createMockLanguageModel = () =>
-  new MockLanguageModelV1({
+  new MockLanguageModelV3({
     modelId: 'mock-chat',
-    defaultObjectGenerationMode: 'json',
     doGenerate: async ({ prompt }) => ({
-      text: JSON.stringify(planFromPrompt(flatten(prompt))),
-      finishReason: 'stop',
+      content: [{ type: 'text', text: JSON.stringify(planFromPrompt(flatten(prompt))) }],
+      finishReason: { unified: 'stop', raw: undefined },
       usage: USAGE,
-      rawCall: RAW,
+      warnings: [],
     }),
     doStream: async () => ({
       stream: simulateReadableStream({
         chunkDelayInMs: 15,
-        values: [
-          ...NARRATIVE.split(/(?<=\s)/).map((text) => ({
+        chunks: [
+          { type: 'text-start' as const, id: 'text-1' },
+          ...NARRATIVE.split(/(?<=\s)/).map((delta) => ({
             type: 'text-delta' as const,
-            textDelta: text,
+            id: 'text-1',
+            delta,
           })),
-          { type: 'finish' as const, finishReason: 'stop' as const, usage: USAGE },
+          { type: 'text-end' as const, id: 'text-1' },
+          {
+            type: 'finish' as const,
+            finishReason: { unified: 'stop' as const, raw: undefined },
+            usage: USAGE,
+          },
         ],
       }),
-      rawCall: RAW,
     }),
   });

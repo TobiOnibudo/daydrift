@@ -135,21 +135,22 @@ export function TripMap({
   }, [routePoints, reduceMotion]);
 
   const markers = useRef(new Map<string, L.Marker>());
-  // Stable icon objects per (stop, state): react-leaflet only swaps an icon when its identity changes.
-  const icons = useRef(new Map<string, L.DivIcon>());
-  const iconFor = (leg: TripLeg, index: number, state: MarkerState) => {
-    const key = `${leg.placeId}:${state}`;
-    let icon = icons.current.get(key);
-    if (!icon) {
-      icon = markerIcon(leg.order, index, state);
-      icons.current.set(key, icon);
-    }
-    return icon;
-  };
+  // Keep icon identity stable per stop/state without reading refs during render.
+  const icons = useMemo(() => {
+    const result = new Map<string, L.DivIcon>();
+    legs.forEach((leg, index) => {
+      for (const state of ['idle', 'hover', 'active'] as const) {
+        result.set(`${leg.placeId}:${state}`, markerIcon(leg.order, index, state));
+      }
+    });
+    return result;
+  }, [legs]);
 
   // popupclose also fires when a different stop's popup opens; only a close of the *current* stop deselects.
   const activeRef = useRef(activeId);
-  activeRef.current = activeId;
+  useEffect(() => {
+    activeRef.current = activeId;
+  }, [activeId]);
 
   return (
     <div
@@ -182,7 +183,7 @@ export function TripMap({
             dashArray: routePoints ? undefined : '8 8',
           }}
         />
-        {legs.map((leg, i) => {
+        {legs.map((leg) => {
           const state: MarkerState =
             leg.placeId === activeId ? 'active' : leg.placeId === hoveredId ? 'hover' : 'idle';
           return (
@@ -193,7 +194,7 @@ export function TripMap({
                 else markers.current.delete(leg.placeId);
               }}
               position={[leg.lat, leg.lng]}
-              icon={iconFor(leg, i, state)}
+              icon={icons.get(`${leg.placeId}:${state}`)!}
               zIndexOffset={state === 'active' ? 1000 : state === 'hover' ? 500 : 0}
               title={`${leg.order}. ${leg.name}`}
               eventHandlers={{
