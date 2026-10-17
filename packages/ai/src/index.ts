@@ -1,7 +1,8 @@
 import { config } from '@daydrift/config';
 import {
   embed as aiEmbed,
-  generateObject as aiGenerateObject,
+  generateText as aiGenerateText,
+  Output,
   streamText as aiStreamText,
 } from 'ai';
 import type { z } from 'zod';
@@ -39,13 +40,14 @@ export interface GenerateObjectOptions<T> {
 
 /** Generate a Zod-validated structured object (e.g. the itinerary plan). */
 export async function generateObject<T>(opts: GenerateObjectOptions<T>) {
-  return aiGenerateObject({
+  const { output } = await aiGenerateText({
     model: getLanguageModel(),
-    schema: opts.schema,
+    output: Output.object({ schema: opts.schema }),
     prompt: opts.prompt,
     system: opts.system,
     ...llmLimits(),
   });
+  return { object: output };
 }
 
 export interface StreamTextOptions {

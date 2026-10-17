@@ -157,6 +157,6 @@ describe('TripResultView editing', () => {
 
     rerender(<TripResultView trip={{ ...trip, legs: trip.legs.slice(0, 1) }} editor={editor} />);
     expect(screen.getByTestId('map')).toHaveAttribute('data-active', 'null');
-    expect(screen.getByRole('button', { name: /Stop 2/ })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: /Stop 1/ })).toHaveAttribute('aria-pressed', 'false');
   });
 });

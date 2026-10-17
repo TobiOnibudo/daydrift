@@ -1,7 +1,7 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { config } from '@daydrift/config';
 import type { EmbeddingModel, LanguageModel } from 'ai';
-import { createOllama } from 'ollama-ai-provider';
+import { createOllama } from 'ai-sdk-ollama';
 
 import { createMockEmbeddingModel, createMockLanguageModel } from './mock-provider.js';
 
@@ -18,9 +18,8 @@ interface ProviderSettings {
 
 const DEFAULT_OLLAMA_URL = 'http://localhost:11434';
 
-/** ollama-ai-provider expects the `/api` suffix, which OLLAMA_BASE_URL omits. */
-const ollamaApiUrl = (base?: string) =>
-  `${(base ?? config.ollamaBaseUrl ?? DEFAULT_OLLAMA_URL).replace(/\/+$/, '')}/api`;
+const ollamaBaseUrl = (base?: string) =>
+  (base ?? config.ollamaBaseUrl ?? DEFAULT_OLLAMA_URL).replace(/\/+$/, '');
 
 const openaiLike = (s: ProviderSettings) =>
   createOpenAI({ apiKey: s.apiKey ?? config.openaiApiKey, baseURL: s.baseUrl });
@@ -51,7 +50,7 @@ export function getLanguageModel(): LanguageModel {
   const model = requireModel(s, 'LLM');
   switch (s.provider) {
     case 'ollama':
-      return createOllama({ baseURL: ollamaApiUrl(s.baseUrl) })(model) as unknown as LanguageModel;
+      return createOllama({ baseURL: ollamaBaseUrl(s.baseUrl) })(model);
     case 'openai':
       return openaiLike(s)(model) as unknown as LanguageModel;
     default:
@@ -72,9 +71,7 @@ export function getEmbeddingModel(): EmbeddingModel {
   const model = requireModel(s, 'embedding');
   switch (s.provider) {
     case 'ollama':
-      return createOllama({ baseURL: ollamaApiUrl(s.baseUrl) }).embedding(
-        model,
-      ) as unknown as EmbeddingModel;
+      return createOllama({ baseURL: ollamaBaseUrl(s.baseUrl) }).embedding(model);
     case 'openai':
       return openaiLike(s).embedding(model, embeddingSettings(model)) as unknown as EmbeddingModel;
     default:

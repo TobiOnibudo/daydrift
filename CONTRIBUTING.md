@@ -6,7 +6,7 @@
 pnpm install && pnpm setup && pnpm dev
 ```
 
-See [docs/07-local-dev.md](./docs/07-local-dev.md) for prerequisites (Node 20, pnpm 9,
+See [docs/07-local-dev.md](./docs/07-local-dev.md) for prerequisites (Node 22.12, pnpm 9,
 Docker, Ollama) and [docs/12-developer-experience.md](./docs/12-developer-experience.md)
 for the full developer workflow.
 
