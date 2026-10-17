@@ -17,11 +17,11 @@ export default defineConfig({
   },
   build: {
     sourcemap: true,
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        manualChunks: {
-          leaflet: ['leaflet', 'react-leaflet'],
-          motion: ['framer-motion'],
+        manualChunks(id) {
+          if (/[/\\]node_modules[/\\](leaflet|react-leaflet)[/\\]/.test(id)) return 'leaflet';
+          if (/[/\\]node_modules[/\\]framer-motion[/\\]/.test(id)) return 'motion';
         },
       },
     },
