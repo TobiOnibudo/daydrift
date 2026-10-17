@@ -34,8 +34,16 @@ export const auth = betterAuth({
   basePath: '/api/v1/auth',
   trustedOrigins: [config.webUrl],
   emailAndPassword: { enabled: true },
-  // Validate sessions from a signed, short-lived cookie instead of a database round trip on every
-  // request. The trade-off: a revoked session can stay valid for up to this many seconds.
+
+  advanced: {
+    defaultCookieAttributes: {
+      sameSite: 'none',
+      secure: true,
+      httpOnly: true,
+    },
+  },
+
+  // Keep your existing session and social provider configuration.
   session: { cookieCache: { enabled: true, maxAge: 60 } },
   socialProviders,
 });
