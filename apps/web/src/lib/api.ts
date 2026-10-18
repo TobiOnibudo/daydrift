@@ -1,11 +1,8 @@
 // The ONLY module that touches `fetch` (docs/05 §2). Components call TanStack Query hooks,
-// which call this. Requests are same-origin by default (Vite proxies /api in dev; the API serves
-// the SPA in production), so the HttpOnly session cookie just works. Set VITE_API_URL only when
-// the API lives on a different origin.
-
-const ORIGIN = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
-
-export const API_BASE = `${ORIGIN}/api/v1`;
+// which call this. Keep browser requests same-origin so privacy protections in mobile browsers do
+// not treat the HttpOnly session cookie as a third-party cookie. Vite proxies /api when the web
+// process and API are deployed separately; the API serves the SPA directly in a single service.
+export const API_BASE = '/api/v1';
 
 /** Thrown on non-2xx responses so Query surfaces typed failures. */
 export class ApiError extends Error {

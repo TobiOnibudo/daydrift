@@ -5,7 +5,7 @@ The Daydrift SPA: **Vite + React 18 + TypeScript (strict) + Tailwind**. It talks
 ## Running it
 
 - `pnpm dev` (from the repo root) starts Vite on :5173 and **proxies `/api` to the API on :3000**, so the browser sees one origin, exactly like production. Cookies, SSE and CORS just work. Point `API_PROXY_TARGET` elsewhere if needed.
-- `pnpm build` emits `dist/`; the API serves it (with immutable caching for hashed assets and a client-route fallback), so production is a single service. Set `VITE_API_URL` only if the API lives on another origin.
+- `pnpm build` emits `dist/`; the API can serve it directly (with immutable caching for hashed assets and a client-route fallback). If the web process is deployed separately, its preview server proxies `/api` to `API_PROXY_TARGET` (or the legacy `VITE_API_URL`) so browser requests and session cookies remain same-origin.
 - `pnpm test` runs Vitest + Testing Library (jsdom).
 
 ## Screens

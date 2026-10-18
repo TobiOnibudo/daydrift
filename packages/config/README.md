@@ -13,5 +13,5 @@
 **Gotchas:**
 
 - `AUTH_SECRET` has **no default** — missing it always throws (v1 problem #5).
-- In `production`, `DATABASE_URL`, `REDIS_URL`, `AUTH_SECRET`, `LLM_PROVIDER`, `EMBEDDING_MODEL`, `VITE_API_URL` (and `OPENAI_API_KEY` when provider is `openai`) are required.
+- In `production`, `DATABASE_URL`, `REDIS_URL`, `AUTH_SECRET`, `LLM_PROVIDER`, and `EMBEDDING_MODEL` (plus `OPENAI_API_KEY` when provider is `openai`) are required. `VITE_API_URL` is optional and is used only as a legacy server-side proxy target by the separately deployed web process.
 - `EMBEDDING_DIM` is derived from `EMBEDDING_MODEL` via a built-in map; for unknown models it must be set explicitly, and if set for a known model it must match.

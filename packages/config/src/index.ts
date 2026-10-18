@@ -106,7 +106,6 @@ if (isProd) {
   if (!env.AUTH_SECRET) fail('AUTH_SECRET is required in production.');
   if (!env.LLM_PROVIDER) fail('LLM_PROVIDER is required in production.');
   if (!env.EMBEDDING_MODEL) fail('EMBEDDING_MODEL is required in production.');
-  if (!env.VITE_API_URL) fail('VITE_API_URL is required in production.');
   const usesOpenAI = env.LLM_PROVIDER === 'openai' || env.EMBEDDING_PROVIDER === 'openai';
   if (usesOpenAI && !env.OPENAI_API_KEY) {
     fail('OPENAI_API_KEY is required in production when provider is openai.');
