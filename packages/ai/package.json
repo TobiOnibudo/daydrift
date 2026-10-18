@@ -19,7 +19,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^0.0.70",
+    "@ai-sdk/openai": "^4.0.94",
     "@daydrift/config": "workspace:*",
     "@daydrift/types": "workspace:*",
     "ai": "^7.0.137",

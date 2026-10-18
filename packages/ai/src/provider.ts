@@ -32,8 +32,9 @@ function assertMockAllowed(): void {
 }
 
 /** text-embedding-3 models can return fewer dimensions; ask for exactly what the schema stores. */
-const embeddingSettings = (model: string) =>
-  model.startsWith('text-embedding-3') ? { dimensions: config.embedding.dim } : {};
+export function getEmbeddingDimensions(): number | undefined {
+  return config.embedding.model?.startsWith('text-embedding-3') ? config.embedding.dim : undefined;
+}
 
 const requireModel = (s: ProviderSettings, kind: string): string => {
   if (!s.model) throw new Error(`No ${kind} model configured.`);
@@ -73,13 +74,10 @@ export function getEmbeddingModel(): EmbeddingModel {
     case 'ollama':
       return createOllama({ baseURL: ollamaBaseUrl(s.baseUrl) }).embedding(model);
     case 'openai':
-      return openaiLike(s).embedding(model, embeddingSettings(model)) as unknown as EmbeddingModel;
+      return openaiLike(s).embedding(model) as unknown as EmbeddingModel;
     default:
       if (s.baseUrl) {
-        return openaiLike(s).embedding(
-          model,
-          embeddingSettings(model),
-        ) as unknown as EmbeddingModel;
+        return openaiLike(s).embedding(model) as unknown as EmbeddingModel;
       }
       throw new Error(
         `Unsupported embedding provider "${s.provider}" (set EMBEDDING_BASE_URL for a generic endpoint).`,
