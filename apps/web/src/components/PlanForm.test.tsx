@@ -51,7 +51,7 @@ describe('PlanForm', () => {
 
   it('submits a chosen stop count and preferred area', async () => {
     const { onSubmit, user } = setup();
-    const stopCount = screen.getByLabelText(/enter an exact stop count/i);
+    const stopCount = screen.getByLabelText(/how many stops would you like/i);
     await user.clear(stopCount);
     await user.type(stopCount, '8');
     await user.type(screen.getByLabelText(/neighbourhood or landmark/i), 'Waterfront');

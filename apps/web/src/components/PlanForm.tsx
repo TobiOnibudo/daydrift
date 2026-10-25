@@ -32,7 +32,6 @@ const DURATIONS: SegmentedOption<Duration>[] = [
 ];
 
 const MIN_STOP_COUNT = 2;
-const QUICK_PICK_STOP_COUNT = 12;
 
 const MODES: SegmentedOption<TravelMode>[] = [
   { value: 'walking', label: 'On foot' },
@@ -68,12 +67,9 @@ export function PlanForm({ cities, submitting, error, fieldErrors = {}, onSubmit
   const summaryRef = useRef<HTMLParagraphElement>(null);
 
   const atLimit = interests.length >= MAX_INTERESTS;
-
-  const setSelectedStopCount = (value: number) => {
-    const next = Math.max(MIN_STOP_COUNT, value);
-    setStopCount(next);
-    setStopCountDraft(String(next));
-  };
+  const typedStopCount = Number(stopCountDraft);
+  const hasValidStopCount =
+    Number.isSafeInteger(typedStopCount) && typedStopCount >= MIN_STOP_COUNT;
 
   // Move focus to the summary when a submission fails, so the message is announced and reachable.
   useEffect(() => {
@@ -239,50 +235,27 @@ export function PlanForm({ cities, submitting, error, fieldErrors = {}, onSubmit
           stopCount={stopCount}
           locationPreference={locationPreference}
         />
-        <fieldset className="space-y-1.5" aria-describedby="stop-count-hint">
-          <legend className="text-sm font-medium">How many stops would you like?</legend>
-          <div className="flex items-center gap-3">
-            <input
-              id="stop-count"
-              type="range"
-              min={MIN_STOP_COUNT}
-              max={Math.max(QUICK_PICK_STOP_COUNT, stopCount)}
-              step={1}
-              value={stopCount}
-              aria-valuetext={`${stopCount} stops`}
-              onChange={(e) => setSelectedStopCount(Number(e.target.value))}
-              className="accent-primary h-2 w-full cursor-pointer"
-            />
-            <Input
-              aria-label="Enter an exact stop count"
-              type="number"
-              min={MIN_STOP_COUNT}
-              step={1}
-              inputMode="numeric"
-              value={stopCountDraft}
-              onChange={(e) => {
-                const draft = e.target.value;
-                setStopCountDraft(draft);
-                const value = Number(draft);
-                if (Number.isSafeInteger(value) && value >= MIN_STOP_COUNT) {
-                  setStopCount(value);
-                }
-              }}
-              onBlur={() => setStopCountDraft(String(stopCount))}
-              className="w-20"
-            />
-          </div>
-          <div className="text-muted-foreground flex justify-between text-xs" aria-hidden="true">
-            <span>{MIN_STOP_COUNT} stops</span>
-            <span>{Math.max(QUICK_PICK_STOP_COUNT, stopCount)}+ stops</span>
-          </div>
-          <p id="stop-count-hint" className="text-muted-foreground text-xs">
-            {stopCount} stops. Longer plans include time to pause for lunch or a break.
-          </p>
-          {fieldErrors.stopCount && (
-            <p className="text-destructive text-sm">{fieldErrors.stopCount}</p>
-          )}
-        </fieldset>
+        <Field
+          id="stop-count"
+          label="How many stops would you like?"
+          hint="Enter any whole number of stops. Longer plans include time to pause for lunch or a break."
+          error={fieldErrors.stopCount}
+        >
+          <Input
+            type="number"
+            min={MIN_STOP_COUNT}
+            step={1}
+            inputMode="numeric"
+            value={stopCountDraft}
+            onChange={(e) => {
+              const draft = e.target.value;
+              setStopCountDraft(draft);
+              const value = Number(draft);
+              if (Number.isSafeInteger(value) && value >= MIN_STOP_COUNT) setStopCount(value);
+            }}
+            onBlur={() => setStopCountDraft(String(stopCount))}
+          />
+        </Field>
         <div className="space-y-2">
           <span className="text-sm font-medium">How long do you have?</span>
           <Segmented
@@ -304,7 +277,12 @@ export function PlanForm({ cities, submitting, error, fieldErrors = {}, onSubmit
           )}
         </div>
 
-        <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={!city || submitting}>
+        <Button
+          type="submit"
+          size="lg"
+          className="w-full sm:w-auto"
+          disabled={!city || submitting || !hasValidStopCount}
+        >
           <Sparkles aria-hidden="true" />
           {submitting ? 'Starting…' : 'Plan my trip'}
         </Button>
