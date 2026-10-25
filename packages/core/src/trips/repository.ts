@@ -1,7 +1,15 @@
 import { randomBytes } from 'node:crypto';
 
 import { db, trips } from '@daydrift/db';
-import type { CreateTripInput, Duration, Trip, TripResult, TravelMode } from '@daydrift/types';
+import {
+  MAX_STOP_COUNT,
+  MIN_STOP_COUNT,
+  type CreateTripInput,
+  type Duration,
+  type Trip,
+  type TripResult,
+  type TravelMode,
+} from '@daydrift/types';
 import { and, desc, eq, inArray, isNotNull } from 'drizzle-orm';
 
 type TripRow = typeof trips.$inferSelect;
@@ -14,6 +22,8 @@ export function tripFromRow(row: TripRow): Trip {
     interests: row.interests,
     duration: row.duration as Duration,
     travelMode: row.travelMode as TravelMode,
+    stopCount: Math.min(MAX_STOP_COUNT, Math.max(MIN_STOP_COUNT, Math.round(row.stopCount))),
+    locationPreference: row.locationPreference,
     title: row.title,
     legs: row.legs ?? [],
     routeGeojson: row.routeGeojson,
@@ -33,6 +43,8 @@ export function tripInput(trip: Trip): CreateTripInput {
     interests: trip.interests,
     duration: trip.duration,
     travelMode: trip.travelMode,
+    stopCount: trip.stopCount ?? 5,
+    locationPreference: trip.locationPreference ?? '',
   };
 }
 
@@ -60,6 +72,8 @@ export async function insertTrip(args: {
       interests: args.input.interests,
       duration: args.input.duration,
       travelMode: args.input.travelMode,
+      stopCount: args.input.stopCount,
+      locationPreference: args.input.locationPreference,
       inputHash: args.inputHash,
       status: args.result ? 'complete' : 'pending',
       ...(args.result ? resultColumns(args.result) : {}),

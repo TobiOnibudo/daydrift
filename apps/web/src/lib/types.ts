@@ -32,6 +32,8 @@ export interface CreateTripPayload {
   interests: string[];
   duration: Duration;
   travelMode: TravelMode;
+  stopCount: number;
+  locationPreference: string;
 }
 
 export type TripStep = 'retrieving' | 'generating' | 'routing';

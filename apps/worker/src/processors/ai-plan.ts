@@ -7,7 +7,7 @@ import {
   normalizeItineraryLegs,
   pathDistanceKm,
   resolvePlaceRefs,
-  stopRange,
+  stopRangeForInput,
   type ItineraryOutput,
   type RouteResult,
 } from '@daydrift/core';
@@ -60,7 +60,7 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 export function createAiPlanProcessor(deps: AiPlanDeps) {
   return async (job: { id?: string; data: AiPlanJobData }): Promise<void> => {
     const { tripId, input } = job.data;
-    const range = stopRange(input.duration);
+    const range = stopRangeForInput(input);
     const log = (message: string, meta: Record<string, unknown> = {}) =>
       deps.log(message, { jobId: job.id, tripId, ...meta });
 

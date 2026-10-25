@@ -25,6 +25,8 @@ describe('PlanForm', () => {
       interests: [],
       duration: 'half-day',
       travelMode: 'walking',
+      stopCount: 5,
+      locationPreference: '',
     });
   });
 
@@ -42,7 +44,20 @@ describe('PlanForm', () => {
       interests: ['art', 'coffee'],
       duration: 'full-day',
       travelMode: 'cycling',
+      stopCount: 5,
+      locationPreference: '',
     });
+  });
+
+  it('submits a chosen stop count and preferred area', async () => {
+    const { onSubmit, user } = setup();
+    await user.selectOptions(screen.getByLabelText(/how many stops/i), '8');
+    await user.type(screen.getByLabelText(/neighbourhood or landmark/i), 'Waterfront');
+    await user.click(screen.getByRole('button', { name: /plan my trip/i }));
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ stopCount: 8, locationPreference: 'Waterfront' }),
+    );
   });
 
   it('toggles interests on and off and reports the state to assistive tech', async () => {

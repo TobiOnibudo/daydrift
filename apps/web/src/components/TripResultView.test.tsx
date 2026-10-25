@@ -29,6 +29,8 @@ const trip: SharedApiTrip = {
   interests: ['art'],
   duration: '2h',
   travelMode: 'walking',
+  stopCount: 2,
+  locationPreference: '',
   title: 'A Day',
   legs: [
     { placeId: 'a', name: 'Royal Ontario Museum', order: 1, lat: 43.66, lng: -79.39 },
@@ -146,7 +148,7 @@ describe('TripResultView editing', () => {
   it('stops offering additions at the maximum', () => {
     renderWithProviders(<TripResultView trip={trip} editor={makeEditor({ canAdd: false })} />);
     expect(screen.getByRole('button', { name: /add a stop/i })).toBeDisabled();
-    expect(screen.getByText(/up to 8 stops/i)).toBeInTheDocument();
+    expect(screen.getByText(/up to 12 stops/i)).toBeInTheDocument();
   });
 
   it('clears the selection when the selected stop is removed', async () => {

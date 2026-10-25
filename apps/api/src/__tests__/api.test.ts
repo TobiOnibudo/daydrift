@@ -310,8 +310,8 @@ describe('editing stops', () => {
   it.each([
     ['fewer than two stops', { placeIds: [ids[0]] }],
     [
-      'more than eight stops',
-      { placeIds: Array.from({ length: 9 }, (_, i) => `${i}${ids[0]!.slice(1)}`) },
+      'more than twelve stops',
+      { placeIds: Array.from({ length: 13 }, (_, i) => `${i}${ids[0]!.slice(1)}`) },
     ],
     ['ids that are not uuids', { placeIds: ['a', 'b'] }],
     ['a missing list', {}],

@@ -10,6 +10,7 @@ import type { PlaceCategory, TripLeg, TripStatus } from '@daydrift/types';
 import {
   boolean,
   index,
+  integer,
   jsonb,
   pgTable,
   real,
@@ -108,6 +109,8 @@ export const trips = pgTable(
     interests: jsonb('interests').$type<string[]>().notNull(),
     duration: text('duration').notNull(),
     travelMode: text('travel_mode').notNull(),
+    stopCount: integer('stop_count').notNull().default(5),
+    locationPreference: text('location_preference').notNull().default(''),
     title: text('title'),
     legs: jsonb('legs').$type<TripLeg[]>(),
     routeGeojson: jsonb('route_geojson'),

@@ -10,11 +10,11 @@ const MODES = {
   driving: { label: 'by car', Icon: Car },
 } as const;
 
-// How many stops the model is asked for at each length (mirrors the server's stop ranges).
+// Duration informs the pacing language; the traveler chooses the actual stop count.
 const LENGTH = {
-  '2h': { nodes: 3, text: 'a couple of hours, 3 stops' },
-  'half-day': { nodes: 5, text: 'half a day, 4-5 stops' },
-  'full-day': { nodes: 6, text: 'a full day, 5-6 stops' },
+  '2h': 'a couple of hours',
+  'half-day': 'half a day',
+  'full-day': 'a full day',
 } as const;
 
 interface TripPreviewProps {
@@ -22,10 +22,19 @@ interface TripPreviewProps {
   duration: Duration;
   mode: TravelMode;
   interests: string[];
+  stopCount: number;
+  locationPreference: string;
 }
 
 /** A live sketch of the trip you are describing, so every choice visibly changes something. */
-export function TripPreview({ cityName, duration, mode, interests }: TripPreviewProps) {
+export function TripPreview({
+  cityName,
+  duration,
+  mode,
+  interests,
+  stopCount,
+  locationPreference,
+}: TripPreviewProps) {
   const { Icon, label } = MODES[mode];
   const length = LENGTH[duration];
 
@@ -37,13 +46,14 @@ export function TripPreview({ cityName, duration, mode, interests }: TripPreview
       <p className="text-secondary text-xs font-medium uppercase tracking-wider">
         Your trip so far
       </p>
-      <MiniRoute stops={length.nodes} Icon={Icon} />
+      <MiniRoute stops={stopCount} Icon={Icon} />
       <p className="font-display text-lg font-semibold leading-tight">
         {cityName || 'Somewhere wonderful'}
       </p>
       <p className="text-muted-foreground text-sm">
-        {length.text}, {label}
+        {length}, {stopCount} stops, {label}
         {interests.length > 0 && <> · {interests.join(', ')}</>}
+        {locationPreference.trim() && <> · near {locationPreference.trim()}</>}
       </p>
     </section>
   );

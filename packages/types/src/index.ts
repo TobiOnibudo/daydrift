@@ -52,12 +52,20 @@ export type Duration = z.infer<typeof DurationSchema>;
 export const TravelModeSchema = z.enum(['walking', 'cycling', 'driving']);
 export type TravelMode = z.infer<typeof TravelModeSchema>;
 
+/** Bounds for a manually selected itinerary length. */
+export const MIN_STOP_COUNT = 2;
+export const MAX_STOP_COUNT = 12;
+
 /** Input accepted when creating a trip. */
 export const CreateTripInputSchema = z.object({
   city: z.string().trim().min(1).max(100),
   interests: z.array(z.string().trim().min(1).max(50)).max(10).default([]),
   duration: DurationSchema,
   travelMode: TravelModeSchema,
+  /** The number of places to include, independent of the duration preset. */
+  stopCount: z.number().int().min(MIN_STOP_COUNT).max(MAX_STOP_COUNT).optional(),
+  /** An optional neighbourhood, landmark, or district to prioritize in recommendations. */
+  locationPreference: z.string().trim().max(100).optional(),
 });
 export type CreateTripInput = z.infer<typeof CreateTripInputSchema>;
 
@@ -83,6 +91,8 @@ export const TripSchema = z.object({
   interests: z.array(z.string()),
   duration: DurationSchema,
   travelMode: TravelModeSchema,
+  stopCount: z.number().int().min(MIN_STOP_COUNT).max(MAX_STOP_COUNT).optional(),
+  locationPreference: z.string().optional(),
   title: z.string().nullable().optional(),
   legs: z.array(TripLegSchema),
   routeGeojson: z.unknown(),

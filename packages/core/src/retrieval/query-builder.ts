@@ -17,6 +17,9 @@ export function buildSearchQuery(input: CreateTripInput): string {
   // Add city
   parts.push(`in ${input.city.toLowerCase()}`);
 
+  // Put an explicit neighbourhood or landmark in the embedding query before broader preferences.
+  if (input.locationPreference) parts.push(`near ${input.locationPreference}`);
+
   // Add duration context
   const duration = DURATION_MAP[input.duration] || input.duration;
   parts.push(`for ${duration}`);

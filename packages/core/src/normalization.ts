@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto';
 
 import type { CreateTripInput } from '@daydrift/types';
 
+import { stopRange } from './prompt.js';
+
 export type NormalizedInput = CreateTripInput;
 
 /** Canonical form so logically identical requests share a cache key (docs/03 §1). */
@@ -13,6 +15,9 @@ export function normalizeInput(input: CreateTripInput): NormalizedInput {
     ].sort(),
     duration: input.duration,
     travelMode: input.travelMode,
+    // Legacy callers predate these preferences. Preserve their duration-based pacing.
+    stopCount: input.stopCount ?? stopRange(input.duration).max,
+    locationPreference: input.locationPreference?.trim().toLowerCase() ?? '',
   };
 }
 
@@ -20,6 +25,15 @@ export function normalizeInput(input: CreateTripInput): NormalizedInput {
 export function hashInput(input: CreateTripInput): string {
   const n = normalizeInput(input);
   return createHash('sha256')
-    .update(JSON.stringify([n.city, n.interests, n.duration, n.travelMode]))
+    .update(
+      JSON.stringify([
+        n.city,
+        n.interests,
+        n.duration,
+        n.travelMode,
+        n.stopCount,
+        n.locationPreference,
+      ]),
+    )
     .digest('hex');
 }

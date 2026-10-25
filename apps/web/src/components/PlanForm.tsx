@@ -43,7 +43,12 @@ interface PlanFormProps {
   /** A summary of what went wrong with the last submission. */
   error?: string | null;
   /** Server-reported problems, shown next to the field they belong to. */
-  fieldErrors?: Partial<Record<'city' | 'interests' | 'duration' | 'travelMode', string>>;
+  fieldErrors?: Partial<
+    Record<
+      'city' | 'interests' | 'duration' | 'travelMode' | 'stopCount' | 'locationPreference',
+      string
+    >
+  >;
   onSubmit: (payload: CreateTripPayload) => void;
 }
 
@@ -54,6 +59,8 @@ export function PlanForm({ cities, submitting, error, fieldErrors = {}, onSubmit
   const [customError, setCustomError] = useState<string | null>(null);
   const [duration, setDuration] = useState<Duration>('half-day');
   const [mode, setMode] = useState<TravelMode>('walking');
+  const [stopCount, setStopCount] = useState(5);
+  const [locationPreference, setLocationPreference] = useState('');
   const summaryRef = useRef<HTMLParagraphElement>(null);
 
   const atLimit = interests.length >= MAX_INTERESTS;
@@ -92,7 +99,7 @@ export function PlanForm({ cities, submitting, error, fieldErrors = {}, onSubmit
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     if (!city || submitting) return;
-    onSubmit({ city, interests, duration, travelMode: mode });
+    onSubmit({ city, interests, duration, travelMode: mode, stopCount, locationPreference });
   };
 
   const chips = [...new Set([...SUGGESTIONS, ...interests])];
@@ -127,6 +134,20 @@ export function PlanForm({ cities, submitting, error, fieldErrors = {}, onSubmit
               </option>
             ))}
           </select>
+        </Field>
+
+        <Field
+          id="location-preference"
+          label="Any neighbourhood or landmark to stay near?"
+          hint="Optional — we’ll prioritize suggestions there first."
+          error={fieldErrors.locationPreference}
+        >
+          <Input
+            value={locationPreference}
+            maxLength={100}
+            placeholder="e.g. near the waterfront or Kensington Market"
+            onChange={(e) => setLocationPreference(e.target.value)}
+          />
         </Field>
 
         <fieldset className="space-y-3">
@@ -205,7 +226,27 @@ export function PlanForm({ cities, submitting, error, fieldErrors = {}, onSubmit
           duration={duration}
           mode={mode}
           interests={interests}
+          stopCount={stopCount}
+          locationPreference={locationPreference}
         />
+        <Field
+          id="stop-count"
+          label="How many stops would you like?"
+          hint="Longer plans include time to pause for lunch or a break."
+          error={fieldErrors.stopCount}
+        >
+          <select
+            value={stopCount}
+            onChange={(e) => setStopCount(Number(e.target.value))}
+            className="border-input bg-card flex h-11 w-full rounded-md border px-3 text-sm"
+          >
+            {Array.from({ length: 11 }, (_, i) => i + 2).map((count) => (
+              <option key={count} value={count}>
+                {count} stops
+              </option>
+            ))}
+          </select>
+        </Field>
         <div className="space-y-2">
           <span className="text-sm font-medium">How long do you have?</span>
           <Segmented

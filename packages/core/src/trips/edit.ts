@@ -6,7 +6,7 @@ import { fetchRoute, type RouteResult } from '../osrm.js';
 import { getPlacesByIds } from '../places/repository.js';
 
 export const MIN_STOPS = 2;
-export const MAX_STOPS = 8;
+export const MAX_STOPS = 12;
 
 /** The request can't be applied; the message is safe to show to the person who made it. */
 export class TripEditError extends Error {

@@ -54,16 +54,18 @@ describe('TripPreview', () => {
     duration: 'half-day',
     mode: 'walking',
     interests: [],
+    stopCount: 5,
+    locationPreference: '',
   };
 
   it('describes the trip being built, and updates as the choices change', () => {
     const { rerender } = render(<TripPreview {...base} interests={['art', 'coffee']} />);
     expect(screen.getByRole('region', { name: 'Your trip so far' })).toBeInTheDocument();
     expect(screen.getByText('Toronto')).toBeInTheDocument();
-    expect(screen.getByText(/half a day, 4-5 stops, on foot · art, coffee/)).toBeInTheDocument();
+    expect(screen.getByText(/half a day, 5 stops, on foot.*art, coffee/)).toBeInTheDocument();
 
     rerender(<TripPreview {...base} duration="full-day" mode="cycling" />);
-    expect(screen.getByText(/a full day, 5-6 stops, by bike/)).toBeInTheDocument();
+    expect(screen.getByText(/a full day, 5 stops, by bike/)).toBeInTheDocument();
   });
 
   it('has a friendly placeholder before a city is chosen', () => {

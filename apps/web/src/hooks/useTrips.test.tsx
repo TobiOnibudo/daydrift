@@ -43,6 +43,8 @@ describe('mutation hooks', () => {
       interests: ['art'],
       duration: '2h',
       travelMode: 'walking',
+      stopCount: 3,
+      locationPreference: '',
     };
     result.current.mutate(payload);
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
