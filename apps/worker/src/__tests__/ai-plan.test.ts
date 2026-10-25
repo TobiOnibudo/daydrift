@@ -152,8 +152,8 @@ describe('ai-plan processor', () => {
     expect(deps.failTrip).not.toHaveBeenCalled();
   });
 
-  it('marks the trip failed when there are too few candidates for any itinerary', async () => {
-    vi.mocked(deps.searchCandidates).mockResolvedValue(candidates.slice(0, 2));
+  it('marks the trip failed when there are fewer than two candidates for any itinerary', async () => {
+    vi.mocked(deps.searchCandidates).mockResolvedValue(candidates.slice(0, 1));
     await run();
 
     expect(deps.failTrip).toHaveBeenCalledWith('trip-1');
