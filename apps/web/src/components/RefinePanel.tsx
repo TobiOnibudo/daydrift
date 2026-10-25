@@ -120,7 +120,7 @@ export function RefinePanel({ pending, onSubmit, className }: RefinePanelProps) 
                   aria-invalid={error ? true : undefined}
                   aria-describedby={error ? errorId : undefined}
                   placeholder="e.g. We're tired, keep the rest close by"
-                  className="border-input bg-background focus-visible:ring-ring w-full resize-none rounded-md border px-3 py-2 text-sm outline-none focus-visible:ring-2 disabled:opacity-60"
+                  className="border-input bg-background w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition-colors focus-visible:bg-accent/60 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-sm disabled:opacity-60"
                 />
                 <div className="flex items-start justify-between gap-2">
                   <p id={errorId} role="alert" className="text-destructive text-xs">

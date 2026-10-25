@@ -132,7 +132,7 @@ export function PlanForm({ cities, submitting, error, fieldErrors = {}, onSubmit
           <select
             value={city}
             onChange={(e) => setCity(e.target.value)}
-            className="border-input bg-card flex h-11 w-full rounded-md border px-3 text-sm"
+            className="border-input bg-card focus-visible:bg-accent/60 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-sm flex h-11 w-full rounded-md border px-3 text-sm transition-colors"
           >
             {cities.map((c) => (
               <option key={c.key} value={c.key}>

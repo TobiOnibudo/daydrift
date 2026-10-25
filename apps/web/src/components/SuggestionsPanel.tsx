@@ -70,7 +70,7 @@ export function SuggestionsPanel({
           placeholder="Search places by name"
           aria-label="Search places by name"
           maxLength={80}
-          className="border-input bg-background focus-visible:ring-ring h-9 w-full rounded-md border pl-8 pr-3 text-sm outline-none focus-visible:ring-2"
+          className="border-input bg-background h-9 w-full rounded-md border pl-8 pr-3 text-sm outline-none transition-colors focus-visible:bg-accent/60 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-sm"
         />
       </div>
 
