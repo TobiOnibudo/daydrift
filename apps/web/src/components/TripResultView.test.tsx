@@ -145,10 +145,10 @@ describe('TripResultView editing', () => {
     expect(editor.swap).toHaveBeenCalledWith('b', 'p9');
   });
 
-  it('stops offering additions at the maximum', () => {
+  it('allows additional stops to be added without a fixed count ceiling', () => {
     renderWithProviders(<TripResultView trip={trip} editor={makeEditor({ canAdd: false })} />);
     expect(screen.getByRole('button', { name: /add a stop/i })).toBeDisabled();
-    expect(screen.getByText(/up to 12 stops/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add a stop/i })).toBeEnabled();
   });
 
   it('clears the selection when the selected stop is removed', async () => {

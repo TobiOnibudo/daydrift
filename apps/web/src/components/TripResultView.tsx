@@ -2,7 +2,6 @@ import { Bike, Car, ExternalLink, Footprints, Plus, Route } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 
 import type { TripEditor } from '../hooks/useTripEditor';
-import { MAX_STOPS } from '../lib/editing';
 import { googleRouteUrl } from '../lib/maps-links';
 import type { SharedApiTrip } from '../lib/types';
 
@@ -152,11 +151,6 @@ export function TripResultView({ trip, actions, back, editor, refine }: TripResu
               >
                 <Plus aria-hidden="true" /> Add a stop
               </Button>
-              {!editor.canAdd && (
-                <span className="text-muted-foreground text-xs">
-                  A trip can have up to {MAX_STOPS} stops.
-                </span>
-              )}
             </div>
             {picker && (
               <SuggestionsPanel

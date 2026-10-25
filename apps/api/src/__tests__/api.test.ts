@@ -309,10 +309,6 @@ describe('editing stops', () => {
 
   it.each([
     ['fewer than two stops', { placeIds: [ids[0]] }],
-    [
-      'more than twelve stops',
-      { placeIds: Array.from({ length: 13 }, (_, i) => `${i}${ids[0]!.slice(1)}`) },
-    ],
     ['ids that are not uuids', { placeIds: ['a', 'b'] }],
     ['a missing list', {}],
   ])('rejects %s before touching the trip', async (_name, payload) => {

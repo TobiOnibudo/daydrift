@@ -35,7 +35,7 @@ const CREATE_LIMIT = {
 };
 
 const ListQuery = z.object({ city: z.string().trim().min(1).optional() });
-const StopsBody = z.object({ placeIds: z.array(z.string().uuid()).min(2).max(12) });
+const StopsBody = z.object({ placeIds: z.array(z.string().uuid()).min(2) });
 const RefineBody = z.object({
   instruction: z
     .string()

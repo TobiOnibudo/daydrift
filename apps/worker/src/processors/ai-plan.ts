@@ -7,6 +7,7 @@ import {
   normalizeItineraryLegs,
   pathDistanceKm,
   resolvePlaceRefs,
+  MIN_STOPS,
   stopRangeForInput,
   type ItineraryOutput,
   type RouteResult,
@@ -60,7 +61,7 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 export function createAiPlanProcessor(deps: AiPlanDeps) {
   return async (job: { id?: string; data: AiPlanJobData }): Promise<void> => {
     const { tripId, input } = job.data;
-    const range = stopRangeForInput(input);
+    const requestedRange = stopRangeForInput(input);
     const log = (message: string, meta: Record<string, unknown> = {}) =>
       deps.log(message, { jobId: job.id, tripId, ...meta });
 
@@ -122,6 +123,8 @@ export function createAiPlanProcessor(deps: AiPlanDeps) {
           interests: [...input.interests, instruction],
         });
         const candidates = [...kept, ...fresh.filter((p) => !kept.some((k) => k.id === p.id))];
+        if (candidates.length < MIN_STOPS) throw new Error('Not enough places to revise this trip');
+        const planInput = { ...input, stopCount: Math.min(requestedRange.max, candidates.length) };
 
         await deps.publish(tripId, {
           event: 'status',
@@ -133,7 +136,7 @@ export function createAiPlanProcessor(deps: AiPlanDeps) {
               candidates,
               kept.map((p) => p.id),
               instruction,
-              input,
+              planInput,
             ),
           ),
           candidates,
@@ -144,7 +147,12 @@ export function createAiPlanProcessor(deps: AiPlanDeps) {
           event: 'status',
           data: { step: 'routing', label: 'Mapping the route' },
         });
-        const legs = normalizeItineraryLegs(itinerary.legs, candidates, range.min, range.max);
+        const legs = normalizeItineraryLegs(
+          itinerary.legs,
+          candidates,
+          planInput.stopCount ?? MIN_STOPS,
+          planInput.stopCount ?? MIN_STOPS,
+        );
         const result = await routeLegs(
           {
             title: itinerary.title,
@@ -181,9 +189,13 @@ export function createAiPlanProcessor(deps: AiPlanDeps) {
         data: { step: 'retrieving', label: 'Finding places' },
       });
       const candidates = await deps.searchCandidates(input);
-      if (candidates.length < range.min) {
+      if (candidates.length < MIN_STOPS) {
         throw new Error(`Only ${candidates.length} candidate places for ${input.city}`);
       }
+      const planInput = {
+        ...input,
+        stopCount: Math.min(requestedRange.max, candidates.length),
+      };
 
       let result: TripResult;
       let cacheable = true;
@@ -193,7 +205,7 @@ export function createAiPlanProcessor(deps: AiPlanDeps) {
           data: { step: 'generating', label: 'Building your itinerary' },
         });
         const itinerary = resolvePlaceRefs(
-          await deps.planItinerary(buildItineraryPrompt(candidates, input)),
+          await deps.planItinerary(buildItineraryPrompt(candidates, planInput)),
           candidates,
         );
         const narrative = (await streamNarrative(itinerary, candidates)).trim();
@@ -202,7 +214,12 @@ export function createAiPlanProcessor(deps: AiPlanDeps) {
           event: 'status',
           data: { step: 'routing', label: 'Mapping the route' },
         });
-        const legs = normalizeItineraryLegs(itinerary.legs, candidates, range.min, range.max);
+        const legs = normalizeItineraryLegs(
+          itinerary.legs,
+          candidates,
+          planInput.stopCount ?? MIN_STOPS,
+          planInput.stopCount ?? MIN_STOPS,
+        );
         result = await routeLegs(
           {
             title: itinerary.title,
@@ -213,7 +230,8 @@ export function createAiPlanProcessor(deps: AiPlanDeps) {
         );
       } catch (err) {
         log('generation failed; building fallback itinerary', { err: String(err) });
-        const legs = buildFallbackItinerary(candidates, range.min, range.max);
+        const effectiveCount = planInput.stopCount ?? MIN_STOPS;
+        const legs = buildFallbackItinerary(candidates, effectiveCount, effectiveCount);
         result = await routeLegs(
           {
             title: `${titleCase(input.city)}: ${input.duration} by ${input.travelMode}`,

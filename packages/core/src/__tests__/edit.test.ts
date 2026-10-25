@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { buildEditedResult, MAX_STOPS, TripEditError, type EditDeps } from '../trips/edit.js';
+import { buildEditedResult, TripEditError, type EditDeps } from '../trips/edit.js';
 import {
   suggestPlacesForTrip,
   SUGGESTION_LIMIT,
@@ -97,6 +97,18 @@ describe('buildEditedResult', () => {
     );
   });
 
+  it('allows itineraries with more than twelve stops', async () => {
+    const manyPlaces = Array.from({ length: 14 }, (_, i) =>
+      makePlace({ id: `long-${i}`, name: `Long Stop ${i}` }),
+    );
+    const result = await buildEditedResult(
+      trip,
+      manyPlaces.map((place) => place.id),
+      deps({ getPlaces: async () => manyPlaces }),
+    );
+    expect(result.legs).toHaveLength(14);
+  });
+
   it('supports removing a stop down to the minimum', async () => {
     const result = await buildEditedResult(trip, ['a', 'c'], deps());
     expect(result.legs.map((l) => l.placeId)).toEqual(['a', 'c']);
@@ -114,7 +126,6 @@ describe('buildEditedResult', () => {
 
   it.each([
     [['a'], /at least 2/],
-    [['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'], new RegExp(`at most ${MAX_STOPS}`)],
     [['a', 'a', 'b'], /only appear once/],
   ])('rejects %j', async (ids, message) => {
     await expect(buildEditedResult(trip, ids, deps())).rejects.toThrow(message);

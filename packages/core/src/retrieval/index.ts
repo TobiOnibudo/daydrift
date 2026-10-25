@@ -14,13 +14,15 @@ export const CANDIDATE_LIMIT = 15;
 /**
  * Retrieve, score and diversify candidate places for a trip request (docs/03 §3-4):
  * embed the query, HNSW top-k in the city, top up from the cached city pool when results
- * are thin, lexical-boost re-rank, then pick up to 15 spread across categories and areas.
+ * are thin, lexical-boost re-rank, then pick enough places spread across categories and areas for
+ * the requested itinerary.
  */
 export async function searchCandidatePlaces(input: CreateTripInput): Promise<Place[]> {
   const queryEmbedding = await embed(buildSearchQuery(input));
-  let results = await vectorSearch(queryEmbedding, input.city, VECTOR_TOP_K);
+  const wanted = Math.max(CANDIDATE_LIMIT, input.stopCount ?? CANDIDATE_LIMIT);
+  let results = await vectorSearch(queryEmbedding, input.city, Math.max(VECTOR_TOP_K, wanted));
 
-  if (results.length < MIN_CANDIDATE_POOL) {
+  if (results.length < Math.max(MIN_CANDIDATE_POOL, wanted)) {
     let pool = await getCityPlacePool(input.city);
     if (!pool) {
       pool = await loadCityPool(input.city);
@@ -30,7 +32,7 @@ export async function searchCandidatePlaces(input: CreateTripInput): Promise<Pla
     results = [...results, ...pool.filter((p) => !seen.has(p.id))];
   }
 
-  return selectDiverseCandidates(scoreWithLexicalBoost(results, input.interests), CANDIDATE_LIMIT);
+  return selectDiverseCandidates(scoreWithLexicalBoost(results, input.interests), wanted);
 }
 
 export { invalidateCityPlacePool } from './cache.js';

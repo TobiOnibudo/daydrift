@@ -32,7 +32,7 @@ const DURATIONS: SegmentedOption<Duration>[] = [
 ];
 
 const MIN_STOP_COUNT = 2;
-const MAX_STOP_COUNT = 12;
+const QUICK_PICK_STOP_COUNT = 12;
 
 const MODES: SegmentedOption<TravelMode>[] = [
   { value: 'walking', label: 'On foot' },
@@ -70,7 +70,7 @@ export function PlanForm({ cities, submitting, error, fieldErrors = {}, onSubmit
   const atLimit = interests.length >= MAX_INTERESTS;
 
   const setSelectedStopCount = (value: number) => {
-    const next = Math.min(MAX_STOP_COUNT, Math.max(MIN_STOP_COUNT, value));
+    const next = Math.max(MIN_STOP_COUNT, value);
     setStopCount(next);
     setStopCountDraft(String(next));
   };
@@ -246,7 +246,7 @@ export function PlanForm({ cities, submitting, error, fieldErrors = {}, onSubmit
               id="stop-count"
               type="range"
               min={MIN_STOP_COUNT}
-              max={MAX_STOP_COUNT}
+              max={Math.max(QUICK_PICK_STOP_COUNT, stopCount)}
               step={1}
               value={stopCount}
               aria-valuetext={`${stopCount} stops`}
@@ -257,7 +257,6 @@ export function PlanForm({ cities, submitting, error, fieldErrors = {}, onSubmit
               aria-label="Enter an exact stop count"
               type="number"
               min={MIN_STOP_COUNT}
-              max={MAX_STOP_COUNT}
               step={1}
               inputMode="numeric"
               value={stopCountDraft}
@@ -265,7 +264,7 @@ export function PlanForm({ cities, submitting, error, fieldErrors = {}, onSubmit
                 const draft = e.target.value;
                 setStopCountDraft(draft);
                 const value = Number(draft);
-                if (Number.isInteger(value) && value >= MIN_STOP_COUNT && value <= MAX_STOP_COUNT) {
+                if (Number.isSafeInteger(value) && value >= MIN_STOP_COUNT) {
                   setStopCount(value);
                 }
               }}
@@ -275,7 +274,7 @@ export function PlanForm({ cities, submitting, error, fieldErrors = {}, onSubmit
           </div>
           <div className="text-muted-foreground flex justify-between text-xs" aria-hidden="true">
             <span>{MIN_STOP_COUNT} stops</span>
-            <span>{MAX_STOP_COUNT} stops</span>
+            <span>{Math.max(QUICK_PICK_STOP_COUNT, stopCount)}+ stops</span>
           </div>
           <p id="stop-count-hint" className="text-muted-foreground text-xs">
             {stopCount} stops. Longer plans include time to pause for lunch or a break.

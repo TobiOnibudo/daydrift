@@ -46,7 +46,7 @@ export function TripPreview({
       <p className="text-secondary text-xs font-medium uppercase tracking-wider">
         Your trip so far
       </p>
-      <MiniRoute stops={stopCount} Icon={Icon} />
+      <MiniRoute stops={Math.min(stopCount, 12)} Icon={Icon} />
       <p className="font-display text-lg font-semibold leading-tight">
         {cityName || 'Somewhere wonderful'}
       </p>

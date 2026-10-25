@@ -36,4 +36,8 @@ describe('hashInput', () => {
     expect(hashInput({ ...base, duration: 'full-day' })).not.toBe(h);
     expect(hashInput({ ...base, travelMode: 'cycling' })).not.toBe(h);
   });
+
+  it('preserves large user selected stop counts', () => {
+    expect(normalizeInput({ ...base, stopCount: 37 }).stopCount).toBe(37);
+  });
 });

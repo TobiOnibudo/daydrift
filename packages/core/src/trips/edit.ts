@@ -6,7 +6,6 @@ import { fetchRoute, type RouteResult } from '../osrm.js';
 import { getPlacesByIds } from '../places/repository.js';
 
 export const MIN_STOPS = 2;
-export const MAX_STOPS = 12;
 
 /** The request can't be applied; the message is safe to show to the person who made it. */
 export class TripEditError extends Error {
@@ -39,9 +38,6 @@ export async function buildEditedResult(
 ): Promise<TripResult> {
   if (placeIds.length < MIN_STOPS) {
     throw new TripEditError(`A trip needs at least ${MIN_STOPS} stops.`);
-  }
-  if (placeIds.length > MAX_STOPS) {
-    throw new TripEditError(`A trip can have at most ${MAX_STOPS} stops.`);
   }
   if (new Set(placeIds).size !== placeIds.length) {
     throw new TripEditError('Each stop can only appear once.');

@@ -1,6 +1,6 @@
 import { toast } from 'sonner';
 
-import { MAX_STOPS, MIN_STOPS } from '../lib/editing';
+import { MIN_STOPS } from '../lib/editing';
 import { describeError } from '../lib/errors';
 import type { ApiTrip } from '../lib/types';
 
@@ -44,7 +44,7 @@ export function useTripEditor(trip: ApiTrip): TripEditor {
   return {
     busy: update.isPending,
     canRemove: ids.length > MIN_STOPS,
-    canAdd: ids.length < MAX_STOPS,
+    canAdd: true,
     move: (placeId, direction) => {
       const from = ids.indexOf(placeId);
       const to = from + direction;
@@ -61,7 +61,7 @@ export function useTripEditor(trip: ApiTrip): TripEditor {
       );
     },
     add: (placeId) => {
-      if (ids.length >= MAX_STOPS || ids.includes(placeId)) return;
+      if (ids.includes(placeId)) return;
       save([...ids, placeId], 'Stop added');
     },
     swap: (placeId, withId) =>

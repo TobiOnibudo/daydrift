@@ -2,7 +2,6 @@ import { randomBytes } from 'node:crypto';
 
 import { db, trips } from '@daydrift/db';
 import {
-  MAX_STOP_COUNT,
   MIN_STOP_COUNT,
   type CreateTripInput,
   type Duration,
@@ -22,7 +21,7 @@ export function tripFromRow(row: TripRow): Trip {
     interests: row.interests,
     duration: row.duration as Duration,
     travelMode: row.travelMode as TravelMode,
-    stopCount: Math.min(MAX_STOP_COUNT, Math.max(MIN_STOP_COUNT, Math.round(row.stopCount))),
+    stopCount: Math.max(MIN_STOP_COUNT, Math.round(row.stopCount)),
     locationPreference: row.locationPreference,
     title: row.title,
     legs: row.legs ?? [],

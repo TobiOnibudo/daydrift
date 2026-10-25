@@ -9,8 +9,8 @@ import { EMBEDDING_DIM } from '@daydrift/config';
 import type { PlaceCategory, TripLeg, TripStatus } from '@daydrift/types';
 import {
   boolean,
+  bigint,
   index,
-  integer,
   jsonb,
   pgTable,
   real,
@@ -109,7 +109,7 @@ export const trips = pgTable(
     interests: jsonb('interests').$type<string[]>().notNull(),
     duration: text('duration').notNull(),
     travelMode: text('travel_mode').notNull(),
-    stopCount: integer('stop_count').notNull().default(5),
+    stopCount: bigint('stop_count', { mode: 'number' }).notNull().default(5),
     locationPreference: text('location_preference').notNull().default(''),
     title: text('title'),
     legs: jsonb('legs').$type<TripLeg[]>(),
