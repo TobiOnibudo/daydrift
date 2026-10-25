@@ -88,6 +88,8 @@ describe('POST /api/v1/trips', () => {
       interests: ['art', 'coffee'],
       duration: 'half-day',
       travelMode: 'walking',
+      stopCount: 5,
+      locationPreference: '',
     });
     expect(inserted.inputHash).toMatch(/^[0-9a-f]{64}$/);
     expect(queue.add).toHaveBeenCalledWith(
@@ -170,7 +172,14 @@ describe('trip resources', () => {
     const [, data, opts] = queue.add.mock.calls[0]!;
     expect(data).toEqual({
       tripId: TRIP_ID,
-      input: { city: 'toronto', interests: ['art'], duration: 'half-day', travelMode: 'walking' },
+      input: {
+        city: 'toronto',
+        interests: ['art'],
+        duration: 'half-day',
+        travelMode: 'walking',
+        stopCount: 5,
+        locationPreference: '',
+      },
     });
     expect(opts.jobId).toMatch(new RegExp(`^${TRIP_ID}-\\d+$`));
   });
@@ -375,7 +384,14 @@ describe('POST /api/v1/trips/:id/refine', () => {
     const [, data, opts] = queue.add.mock.calls[0]!;
     expect(data).toEqual({
       tripId: TRIP_ID,
-      input: { city: 'toronto', interests: ['art'], duration: 'half-day', travelMode: 'walking' },
+      input: {
+        city: 'toronto',
+        interests: ['art'],
+        duration: 'half-day',
+        travelMode: 'walking',
+        stopCount: 5,
+        locationPreference: '',
+      },
       refine: { instruction: 'It is raining' },
     });
     expect(opts.jobId).toMatch(new RegExp(`^${TRIP_ID}-refine-\\d+$`));
