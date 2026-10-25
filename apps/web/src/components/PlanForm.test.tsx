@@ -51,7 +51,9 @@ describe('PlanForm', () => {
 
   it('submits a chosen stop count and preferred area', async () => {
     const { onSubmit, user } = setup();
-    await user.selectOptions(screen.getByLabelText(/how many stops/i), '8');
+    const stopCount = screen.getByLabelText(/enter an exact stop count/i);
+    await user.clear(stopCount);
+    await user.type(stopCount, '8');
     await user.type(screen.getByLabelText(/neighbourhood or landmark/i), 'Waterfront');
     await user.click(screen.getByRole('button', { name: /plan my trip/i }));
 

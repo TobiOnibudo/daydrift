@@ -26,10 +26,13 @@ const SUGGESTIONS = [
 ];
 
 const DURATIONS: SegmentedOption<Duration>[] = [
-  { value: '2h', label: 'A couple of hours', hint: '3 stops' },
-  { value: 'half-day', label: 'Half a day', hint: '4-5 stops' },
-  { value: 'full-day', label: 'A full day', hint: '5-6 stops' },
+  { value: '2h', label: 'A couple of hours' },
+  { value: 'half-day', label: 'Half a day' },
+  { value: 'full-day', label: 'A full day' },
 ];
+
+const MIN_STOP_COUNT = 2;
+const MAX_STOP_COUNT = 12;
 
 const MODES: SegmentedOption<TravelMode>[] = [
   { value: 'walking', label: 'On foot' },
@@ -60,10 +63,17 @@ export function PlanForm({ cities, submitting, error, fieldErrors = {}, onSubmit
   const [duration, setDuration] = useState<Duration>('half-day');
   const [mode, setMode] = useState<TravelMode>('walking');
   const [stopCount, setStopCount] = useState(5);
+  const [stopCountDraft, setStopCountDraft] = useState('5');
   const [locationPreference, setLocationPreference] = useState('');
   const summaryRef = useRef<HTMLParagraphElement>(null);
 
   const atLimit = interests.length >= MAX_INTERESTS;
+
+  const setSelectedStopCount = (value: number) => {
+    const next = Math.min(MAX_STOP_COUNT, Math.max(MIN_STOP_COUNT, value));
+    setStopCount(next);
+    setStopCountDraft(String(next));
+  };
 
   // Move focus to the summary when a submission fails, so the message is announced and reachable.
   useEffect(() => {
@@ -229,24 +239,51 @@ export function PlanForm({ cities, submitting, error, fieldErrors = {}, onSubmit
           stopCount={stopCount}
           locationPreference={locationPreference}
         />
-        <Field
-          id="stop-count"
-          label="How many stops would you like?"
-          hint="Longer plans include time to pause for lunch or a break."
-          error={fieldErrors.stopCount}
-        >
-          <select
-            value={stopCount}
-            onChange={(e) => setStopCount(Number(e.target.value))}
-            className="border-input bg-card flex h-11 w-full rounded-md border px-3 text-sm"
-          >
-            {Array.from({ length: 11 }, (_, i) => i + 2).map((count) => (
-              <option key={count} value={count}>
-                {count} stops
-              </option>
-            ))}
-          </select>
-        </Field>
+        <fieldset className="space-y-1.5" aria-describedby="stop-count-hint">
+          <legend className="text-sm font-medium">How many stops would you like?</legend>
+          <div className="flex items-center gap-3">
+            <input
+              id="stop-count"
+              type="range"
+              min={MIN_STOP_COUNT}
+              max={MAX_STOP_COUNT}
+              step={1}
+              value={stopCount}
+              aria-valuetext={`${stopCount} stops`}
+              onChange={(e) => setSelectedStopCount(Number(e.target.value))}
+              className="accent-primary h-2 w-full cursor-pointer"
+            />
+            <Input
+              aria-label="Enter an exact stop count"
+              type="number"
+              min={MIN_STOP_COUNT}
+              max={MAX_STOP_COUNT}
+              step={1}
+              inputMode="numeric"
+              value={stopCountDraft}
+              onChange={(e) => {
+                const draft = e.target.value;
+                setStopCountDraft(draft);
+                const value = Number(draft);
+                if (Number.isInteger(value) && value >= MIN_STOP_COUNT && value <= MAX_STOP_COUNT) {
+                  setStopCount(value);
+                }
+              }}
+              onBlur={() => setStopCountDraft(String(stopCount))}
+              className="w-20"
+            />
+          </div>
+          <div className="text-muted-foreground flex justify-between text-xs" aria-hidden="true">
+            <span>{MIN_STOP_COUNT} stops</span>
+            <span>{MAX_STOP_COUNT} stops</span>
+          </div>
+          <p id="stop-count-hint" className="text-muted-foreground text-xs">
+            {stopCount} stops. Longer plans include time to pause for lunch or a break.
+          </p>
+          {fieldErrors.stopCount && (
+            <p className="text-destructive text-sm">{fieldErrors.stopCount}</p>
+          )}
+        </fieldset>
         <div className="space-y-2">
           <span className="text-sm font-medium">How long do you have?</span>
           <Segmented
