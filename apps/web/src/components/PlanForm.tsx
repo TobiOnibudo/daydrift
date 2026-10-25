@@ -235,27 +235,43 @@ export function PlanForm({ cities, submitting, error, fieldErrors = {}, onSubmit
           stopCount={stopCount}
           locationPreference={locationPreference}
         />
-        <Field
-          id="stop-count"
-          label="How many stops would you like?"
-          hint="Enter any whole number of stops. Longer plans include time to pause for lunch or a break."
-          error={fieldErrors.stopCount}
-        >
-          <Input
-            type="number"
-            min={MIN_STOP_COUNT}
-            step={1}
-            inputMode="numeric"
-            value={stopCountDraft}
-            onChange={(e) => {
-              const draft = e.target.value;
-              setStopCountDraft(draft);
-              const value = Number(draft);
-              if (Number.isSafeInteger(value) && value >= MIN_STOP_COUNT) setStopCount(value);
-            }}
-            onBlur={() => setStopCountDraft(String(stopCount))}
-          />
-        </Field>
+        <div className="border-border space-y-2 border-b pb-5">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-1">
+              <label htmlFor="stop-count" className="text-sm font-medium">
+                How many stops would you like?
+              </label>
+              <p id="stop-count-hint" className="text-muted-foreground text-xs">
+                2 minimum · Longer plans include a lunch or break.
+              </p>
+            </div>
+            <Input
+              id="stop-count"
+              type="number"
+              min={MIN_STOP_COUNT}
+              step={1}
+              inputMode="numeric"
+              aria-invalid={fieldErrors.stopCount ? true : undefined}
+              aria-describedby={
+                fieldErrors.stopCount ? 'stop-count-hint stop-count-error' : 'stop-count-hint'
+              }
+              className="w-20 shrink-0 text-center font-semibold tabular-nums"
+              value={stopCountDraft}
+              onChange={(e) => {
+                const draft = e.target.value;
+                setStopCountDraft(draft);
+                const value = Number(draft);
+                if (Number.isSafeInteger(value) && value >= MIN_STOP_COUNT) setStopCount(value);
+              }}
+              onBlur={() => setStopCountDraft(String(stopCount))}
+            />
+          </div>
+          {fieldErrors.stopCount && (
+            <p id="stop-count-error" className="text-destructive text-sm">
+              {fieldErrors.stopCount}
+            </p>
+          )}
+        </div>
         <div className="space-y-2">
           <span className="text-sm font-medium">How long do you have?</span>
           <Segmented
