@@ -46,13 +46,14 @@ describe('Google Maps links', () => {
     expect(googleRouteUrl([a], 'walking')).toBeNull();
   });
 
-  it('gives directions to a stop, or the leg from the previous stop', () => {
+  it("gives directions from the traveler's current location to a stop", () => {
     const here = new URL(googleToStopUrl(b, 'cycling'));
     expect(here.searchParams.get('destination')).toBe('43.6536,-79.3925');
     expect(here.searchParams.has('origin')).toBe(false);
     expect(here.searchParams.get('travelmode')).toBe('bicycling');
 
-    const leg = new URL(googleToStopUrl(b, 'walking', a));
-    expect(leg.searchParams.get('origin')).toBe('43.6677,-79.3948');
+    const laterStop = new URL(googleToStopUrl(c, 'walking'));
+    expect(laterStop.searchParams.get('destination')).toBe('43.6426,-79.3871');
+    expect(laterStop.searchParams.has('origin')).toBe(false);
   });
 });

@@ -36,13 +36,12 @@ export function googleRouteUrl(stops: MapPoint[], mode: TravelMode): string | nu
   return `https://www.google.com/maps/dir/?${params}`;
 }
 
-/** Directions to one stop; with `from` (the previous stop) it is the leg between them. */
-export function googleToStopUrl(stop: MapPoint, mode: TravelMode, from?: MapPoint): string {
+/** Directions from the traveler's current location to one stop. */
+export function googleToStopUrl(stop: MapPoint, mode: TravelMode): string {
   const params = new URLSearchParams({
     api: '1',
     destination: coord(stop),
     travelmode: GOOGLE_MODE[mode],
   });
-  if (from) params.set('origin', coord(from));
   return `https://www.google.com/maps/dir/?${params}`;
 }

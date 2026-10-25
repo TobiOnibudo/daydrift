@@ -117,10 +117,10 @@ describe('ItineraryList', () => {
       expect(links[0]?.textContent).toMatch(/opens in a new tab/);
     });
 
-    it('starts later stops from the previous one', () => {
+    it("routes later stops from the traveler's current location", () => {
       setup({ activeId: 'b' });
       const href = new URL(screen.getByRole('link').getAttribute('href') as string);
-      expect(href.searchParams.get('origin')).toBe('43.66,-79.39');
+      expect(href.searchParams.has('origin')).toBe(false);
       expect(href.searchParams.get('destination')).toBe('43.64,-79.46');
     });
 

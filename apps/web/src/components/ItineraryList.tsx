@@ -32,7 +32,7 @@ export const stopElementId = (placeId: string) => `stop-${placeId}`;
 /**
  * The itinerary as a timeline on the signature route line. Each stop is a button linked to its
  * marker on the map: activate it to fly there, hover or focus it to highlight the marker. The
- * selected stop expands with a Google Maps link for getting there.
+ * selected stop expands with a Google Maps link from the traveler's current location.
  */
 export function ItineraryList({
   legs,
@@ -65,7 +65,6 @@ export function ItineraryList({
       {legs.map((leg, index) => {
         const active = leg.placeId === activeId;
         const highlighted = active || leg.placeId === hoveredId;
-        const previous = legs[index - 1];
         return (
           <motion.li
             key={leg.placeId}
@@ -136,12 +135,12 @@ export function ItineraryList({
                   className="overflow-hidden pl-[3.25rem]"
                 >
                   <a
-                    href={googleToStopUrl(leg, travelMode, previous)}
+                    href={googleToStopUrl(leg, travelMode)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="border-input bg-card hover:bg-accent my-2 inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors"
                   >
-                    Directions in Google Maps
+                    Directions from your location
                     <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                     <span className="sr-only"> (opens in a new tab)</span>
                   </a>
