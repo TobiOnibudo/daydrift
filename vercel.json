@@ -5,6 +5,14 @@
   "installCommand": "pnpm install --frozen-lockfile --prod=false",
   "rewrites": [
     {
+      "source": "/health",
+      "destination": "/api/health"
+    },
+    {
+      "source": "/health/:path*",
+      "destination": "/api/health/:path*"
+    },
+    {
       "source": "/((?!api/|health(?:/|$)).*)",
       "destination": "/index.html"
     }
@@ -14,6 +22,9 @@
       "maxDuration": 60
     },
     "api/health.js": {
+      "maxDuration": 60
+    },
+    "api/health/[...path].js": {
       "maxDuration": 60
     },
     "api/ai-plan.js": {
