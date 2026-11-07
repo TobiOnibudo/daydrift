@@ -5,7 +5,7 @@
   "installCommand": "pnpm install --frozen-lockfile --prod=false",
   "rewrites": [
     {
-      "source": "/((?!api/|health$).*)",
+      "source": "/((?!api/|health(?:/|$)).*)",
       "destination": "/index.html"
     }
   ],
