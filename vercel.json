@@ -5,6 +5,10 @@
   "installCommand": "pnpm install --frozen-lockfile --prod=false",
   "rewrites": [
     {
+      "source": "/api/v1/:path*",
+      "destination": "/api/index?__daydrift_path=v1/:path*"
+    },
+    {
       "source": "/health",
       "destination": "/api/health"
     },
@@ -19,6 +23,9 @@
   ],
   "functions": {
     "api/[...path].js": {
+      "maxDuration": 60
+    },
+    "api/index.js": {
       "maxDuration": 60
     },
     "api/v1/[...path].js": {
