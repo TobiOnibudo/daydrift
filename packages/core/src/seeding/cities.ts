@@ -18,6 +18,10 @@ export const CITIES: Record<string, CityDefinition> = {
     name: 'Vancouver',
     bbox: { south: 49.24, west: -123.16, north: 49.31, east: -123.04 },
   },
+  calgary: {
+    name: 'Calgary',
+    bbox: { south: 50.92, west: -114.22, north: 51.2, east: -113.95 },
+  },
 };
 
 export function findCity(name: string): CityDefinition | undefined {
