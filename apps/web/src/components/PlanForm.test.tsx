@@ -17,11 +17,11 @@ const setup = (props: Partial<React.ComponentProps<typeof PlanForm>> = {}) => {
 };
 
 describe('PlanForm', () => {
-  it('submits sensible defaults: first city, no interests, half a day on foot', async () => {
+  it('submits sensible defaults: Toronto, no interests, half a day on foot', async () => {
     const { onSubmit, user } = setup();
     await user.click(screen.getByRole('button', { name: /plan my trip/i }));
     expect(onSubmit).toHaveBeenCalledWith({
-      city: 'halifax',
+      city: 'toronto',
       interests: [],
       duration: 'half-day',
       travelMode: 'walking',

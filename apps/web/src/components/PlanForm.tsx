@@ -55,7 +55,9 @@ interface PlanFormProps {
 }
 
 export function PlanForm({ cities, submitting, error, fieldErrors = {}, onSubmit }: PlanFormProps) {
-  const [city, setCity] = useState(cities[0]?.key ?? '');
+  const [city, setCity] = useState(
+    () => cities.find((candidate) => candidate.key === 'toronto')?.key ?? cities[0]?.key ?? '',
+  );
   const [interests, setInterests] = useState<string[]>([]);
   const [custom, setCustom] = useState('');
   const [customError, setCustomError] = useState<string | null>(null);
@@ -132,7 +134,7 @@ export function PlanForm({ cities, submitting, error, fieldErrors = {}, onSubmit
           <select
             value={city}
             onChange={(e) => setCity(e.target.value)}
-            className="border-input bg-card focus-visible:bg-accent/60 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-sm flex h-11 w-full rounded-md border px-3 text-sm transition-colors"
+            className="border-input bg-card focus-visible:bg-accent/60 flex h-11 w-full rounded-md border px-3 text-sm transition-colors focus-visible:shadow-sm focus-visible:ring-0 focus-visible:ring-offset-0"
           >
             {cities.map((c) => (
               <option key={c.key} value={c.key}>
