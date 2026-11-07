@@ -10,13 +10,13 @@
     }
   ],
   "functions": {
-    "api/[...path].ts": {
+    "api/[...path].js": {
       "maxDuration": 60
     },
-    "api/health.ts": {
+    "api/health.js": {
       "maxDuration": 60
     },
-    "api/ai-plan.ts": {
+    "api/ai-plan.js": {
       "maxDuration": 300,
       "experimentalTriggers": [
         {
