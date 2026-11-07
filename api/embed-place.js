@@ -1,1 +1,1 @@
-export { default } from '../apps/api/dist/vercel-embed-place.js';
+export { default } from '../apps/api/dist/queue-handlers/embed-place.js';

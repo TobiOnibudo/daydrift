@@ -11,7 +11,7 @@ import Fastify from 'fastify';
 import { betterAuthRoutes } from './plugins/better-auth.js';
 import { registerErrorHandlers } from './plugins/error-handler.js';
 import { healthRoutes, v1Routes } from './routes/index.js';
-import { createVercelAiPlanQueue, type AiPlanJobProducer } from './vercel-queue.js';
+import { createManagedAiPlanQueue, type AiPlanJobProducer } from './background-queue.js';
 
 export type AiPlanQueue = AiPlanJobProducer;
 
@@ -67,7 +67,7 @@ export async function buildApp(options: AppOptions = {}) {
     allowList: (req) => !req.url.startsWith('/api/'),
   });
 
-  const queue = options.aiPlanQueue ?? (config.isVercel ? createVercelAiPlanQueue() : createAiPlanQueue());
+  const queue = options.aiPlanQueue ?? (config.isVercel ? createManagedAiPlanQueue() : createAiPlanQueue());
   app.decorate('aiPlanQueue', queue);
   app.addHook('onClose', async () => {
     await queue.close();

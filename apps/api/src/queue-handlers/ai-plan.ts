@@ -9,7 +9,7 @@ import { createAiPlanDeps } from '@daydrift/worker/processors/deps';
 
 const queue = new QueueClient();
 
-/** Vercel's private queue consumer for AI itinerary generation. */
+/** Managed queue consumer for AI itinerary generation. */
 export default queue.handleNodeCallback<AiPlanJobData>(
   async (message, metadata: MessageMetadata) => {
     const publisher = createTripEventPublisher();

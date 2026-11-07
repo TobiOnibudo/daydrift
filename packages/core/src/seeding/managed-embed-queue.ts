@@ -1,8 +1,8 @@
 import { send } from '@vercel/queue';
 import type { EmbedPlaceJobData } from '@daydrift/queue';
 
-/** Vercel Queue producer used when a seed is initiated by the serverless API. */
-export function createVercelEmbedPlaceQueue() {
+/** Managed background-queue producer used when a seed runs in a serverless API. */
+export function createManagedEmbedPlaceQueue() {
   return {
     addBulk: async (
       jobs: Array<{ data: EmbedPlaceJobData; opts?: { jobId?: string } }>,

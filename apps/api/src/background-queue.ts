@@ -1,17 +1,18 @@
 import { send } from '@vercel/queue';
 import type { AiPlanJobData } from '@daydrift/queue';
 
-/** Minimal producer contract shared by BullMQ locally and Vercel Queues in production. */
+/** Minimal producer contract shared by the persistent and serverless runtimes. */
 export interface AiPlanJobProducer {
   add(name: string, data: AiPlanJobData, options?: { jobId?: string }): Promise<unknown>;
   close(): Promise<void>;
 }
 
 /**
- * Vercel Queues replaces the always-on BullMQ worker in the Vercel deployment.
- * The idempotency key protects the create endpoint from a duplicate retry.
+ * Publishes jobs to the managed background queue when no persistent worker is
+ * available. The transport is selected by deployment configuration, not the
+ * business route that creates a trip.
  */
-export function createVercelAiPlanQueue(): AiPlanJobProducer {
+export function createManagedAiPlanQueue(): AiPlanJobProducer {
   return {
     add: async (_name, data, options) =>
       send('ai-plan', data, {
