@@ -21,6 +21,9 @@
     "api/[...path].js": {
       "maxDuration": 60
     },
+    "api/v1/[...path].js": {
+      "maxDuration": 60
+    },
     "api/health.js": {
       "maxDuration": 60
     },
