@@ -27,7 +27,7 @@
     "bullmq": "^5.0.0",
     "fastify": "^4.28.0",
     "ioredis": "^6.0.0",
-    "zod": "^3.23.0"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
