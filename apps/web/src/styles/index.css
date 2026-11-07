@@ -87,6 +87,33 @@
   ::selection {
     background: hsl(var(--primary) / 0.25);
   }
+
+  /* A quiet, rounded scrollbar that follows the paper-and-coral palette. */
+  * {
+    scrollbar-color: hsl(var(--primary) / 0.7) hsl(var(--muted));
+    scrollbar-width: thin;
+  }
+
+  *::-webkit-scrollbar {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border: 0.25rem solid hsl(var(--background));
+    border-radius: 9999px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.7);
+    border: 0.25rem solid hsl(var(--background));
+    border-radius: 9999px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary));
+  }
 }
 
 /* The signature: a dashed route line. Reused by dividers, the stepper, and the itinerary timeline. */
