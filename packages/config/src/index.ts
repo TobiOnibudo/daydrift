@@ -81,6 +81,9 @@ const envSchema = z.object({
   VITE_API_URL: z.string().optional(),
 
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  // Set automatically by Vercel. This is intentionally parsed here so runtime
+  // selection never reads process.env outside the configuration boundary.
+  VERCEL: z.string().optional(),
   PORT: z.coerce.number().int().positive().default(3000),
   // Requests per window per client on /api/*. Defaults: 300 per 15 min in production, 10000 per min otherwise.
   RATE_LIMIT_MAX: z.coerce.number().int().positive().optional(),
@@ -150,6 +153,7 @@ export const EMBEDDING_DIM: number = resolveEmbeddingDim();
 /** The typed, frozen config object. Import this everywhere instead of process.env. */
 export const config = Object.freeze({
   nodeEnv: env.NODE_ENV,
+  isVercel: env.VERCEL === '1',
   port: env.PORT,
   rateLimitMax: env.RATE_LIMIT_MAX,
   webUrl: env.WEB_URL,
