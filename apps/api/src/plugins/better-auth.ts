@@ -17,6 +17,8 @@ export const betterAuthRoutes: FastifyPluginAsync = async (app) => {
       );
 
       reply.status(response.status);
+      // Login and registration responses must never be cached by a browser or intermediary.
+      reply.header('Cache-Control', 'no-store');
       for (const [name, value] of response.headers) {
         if (name !== 'set-cookie') reply.header(name, value);
       }

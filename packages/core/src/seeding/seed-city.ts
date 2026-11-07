@@ -1,4 +1,5 @@
 import { db, places } from '@daydrift/db';
+import { config } from '@daydrift/config';
 import { createEmbedPlaceQueue } from '@daydrift/queue';
 import { and, eq, isNull } from 'drizzle-orm';
 
@@ -7,6 +8,7 @@ import { invalidateCityPlacePool } from '../retrieval/cache.js';
 import { capByCategory, mapOverpassToPlace, placeEmbeddingText } from './mapping.js';
 import type { PlaceInsert } from './mapping.js';
 import { fetchPlacesFromOverpass, type BoundingBox } from './overpass.js';
+import { createVercelEmbedPlaceQueue } from './vercel-embed-queue.js';
 
 export interface CityDefinition {
   name: string;
@@ -55,7 +57,9 @@ export async function seedCity(city: CityDefinition): Promise<SeedResult> {
     .from(places)
     .where(and(eq(places.city, cityKey), isNull(places.embedding)));
 
-  const queue = createEmbedPlaceQueue();
+  // Vercel functions cannot host a persistent BullMQ worker, so seed requests there
+  // publish directly to the matching Vercel Queue consumer.
+  const queue = config.isVercel ? createVercelEmbedPlaceQueue() : createEmbedPlaceQueue();
   try {
     await queue.addBulk(
       pending.map((p) => ({

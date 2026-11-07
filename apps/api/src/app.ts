@@ -36,7 +36,15 @@ export interface AppOptions {
 const DEFAULT_WEB_DIST = fileURLToPath(new URL('../../web/dist', import.meta.url));
 
 export async function buildApp(options: AppOptions = {}) {
-  const app = Fastify({ logger: options.logger ?? true, trustProxy: true });
+  const app = Fastify({
+    // Authentication payloads are necessarily available in memory long enough for Better Auth
+    // to hash them, but must never be included in application logs.
+    logger:
+      options.logger === false
+        ? false
+        : { redact: ['req.body.password', 'request.body.password', 'password'] },
+    trustProxy: true,
+  });
 
   const webDist = options.webDist ?? DEFAULT_WEB_DIST;
   const serveSpa = webDist !== false && existsSync(`${webDist}/index.html`);
@@ -44,6 +52,12 @@ export async function buildApp(options: AppOptions = {}) {
 
   // CORS: prod locks to the web origin; dev is permissive. Credentials for cookie auth.
   await app.register(cors, { origin: isProd ? config.webUrl : true, credentials: true });
+
+  if (isProd) {
+    app.addHook('onSend', async (_request, reply) => {
+      reply.header('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+    });
+  }
 
   // Rate limiting (docs/04 §7) covers the API only: the SPA's scripts, styles and fonts, and the
   // health probes, must never count against a visitor. Trip creation has its own, tighter limit.
